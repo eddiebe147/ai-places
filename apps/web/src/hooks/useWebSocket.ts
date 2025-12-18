@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useUIStore } from '@/stores/ui-store';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useAuthStore } from '@/stores/auth-store';
 import type {
   ClientMessage,
   ServerMessage,
@@ -31,6 +32,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
   const { setConnected, setCooldown } = useUIStore();
   const { initializeCanvas, updatePixel } = useCanvasStore();
+  const { sessionToken } = useAuthStore();
 
   // Handle incoming messages
   const handleMessage = useCallback(
@@ -125,6 +127,19 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         wsRef.current = ws;
         setConnected(true);
         reconnectAttemptsRef.current = 0;
+
+        // Auto-authenticate if we have a session token
+        const currentToken = useAuthStore.getState().sessionToken;
+        if (currentToken) {
+          console.log('[WS] Auto-authenticating with session token');
+          ws.send(
+            JSON.stringify({
+              type: 'authenticate',
+              payload: { token: currentToken },
+            })
+          );
+        }
+
         if (mountedRef.current) {
           options.onConnected?.();
         }

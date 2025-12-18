@@ -8,6 +8,8 @@ import { ColorPalette } from '@/components/ui/ColorPalette';
 import { CooldownTimer } from '@/components/ui/CooldownTimer';
 import { CoordinateDisplay } from '@/components/canvas/CoordinateDisplay';
 import { ConnectionStatus } from '@/components/ui/ConnectionStatus';
+import { LoginButton } from '@/components/auth/LoginButton';
+import { SpectatorBadge } from '@/components/auth/SpectatorBadge';
 import { cn } from '@/lib/utils';
 
 export function CanvasLayout() {
@@ -38,7 +40,10 @@ export function CanvasLayout() {
 
       {/* Top bar */}
       <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between pointer-events-none">
-        <ConnectionStatus />
+        <div className="flex items-center gap-3 pointer-events-auto">
+          <ConnectionStatus />
+          <LoginButton />
+        </div>
         <CoordinateDisplay />
       </div>
 
@@ -53,6 +58,7 @@ export function CanvasLayout() {
             isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
           )}
         >
+          <SpectatorBadge />
           <ColorPalette />
           <CooldownTimer />
 
@@ -72,7 +78,10 @@ export function CanvasLayout() {
           <div className="bg-neutral-900/95 backdrop-blur-sm rounded-t-2xl p-4 border-t border-neutral-800">
             <div className="flex items-center justify-between gap-4">
               <ColorPalette compact />
-              <CooldownTimer compact />
+              <div className="flex items-center gap-2">
+                <CooldownTimer compact />
+                <LoginButton compact />
+              </div>
             </div>
           </div>
         </div>
