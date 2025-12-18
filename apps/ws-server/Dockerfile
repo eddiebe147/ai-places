@@ -15,9 +15,9 @@ COPY apps/ws-server ./apps/ws-server
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Build shared package
+# Build shared package (compile TypeScript to JavaScript)
 WORKDIR /app/packages/shared
-RUN pnpm type-check
+RUN pnpm build
 
 # Build ws-server
 WORKDIR /app/apps/ws-server
