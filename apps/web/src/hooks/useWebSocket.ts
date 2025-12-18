@@ -17,12 +17,17 @@ interface UseWebSocketOptions {
   onError?: (error: Event) => void;
 }
 
+// Singleton WebSocket instance to prevent multiple connections
+let globalWs: WebSocket | null = null;
+let globalWsConnecting = false;
+
 export function useWebSocket(options: UseWebSocketOptions = {}) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
-  const maxReconnectAttempts = 10;
-  const baseReconnectDelay = 1000;
+  const mountedRef = useRef(false);
+  const maxReconnectAttempts = 5;
+  const baseReconnectDelay = 2000;
 
   const { setConnected, setCooldown } = useUIStore();
   const { initializeCanvas, updatePixel } = useCanvasStore();
@@ -92,49 +97,71 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     [initializeCanvas, updatePixel, setCooldown]
   );
 
-  // Connect to WebSocket
+  // Connect to WebSocket (singleton pattern)
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log('[WS] Already connected');
+    // If already connected or connecting, reuse the existing connection
+    if (globalWs?.readyState === WebSocket.OPEN) {
+      console.log('[WS] Already connected (global)');
+      wsRef.current = globalWs;
+      setConnected(true);
+      return;
+    }
+
+    if (globalWsConnecting) {
+      console.log('[WS] Connection already in progress');
       return;
     }
 
     console.log('[WS] Connecting to:', WS_URL);
+    globalWsConnecting = true;
 
     try {
       const ws = new WebSocket(WS_URL);
 
       ws.onopen = () => {
         console.log('[WS] Connected');
+        globalWsConnecting = false;
+        globalWs = ws;
+        wsRef.current = ws;
         setConnected(true);
         reconnectAttemptsRef.current = 0;
-        options.onConnected?.();
-        // Server sends canvas state automatically on connection
+        if (mountedRef.current) {
+          options.onConnected?.();
+        }
       };
 
       ws.onclose = (event) => {
         console.log('[WS] Disconnected:', event.code, event.reason);
-        setConnected(false);
+        globalWsConnecting = false;
+        globalWs = null;
         wsRef.current = null;
-        options.onDisconnected?.();
+        setConnected(false);
+        if (mountedRef.current) {
+          options.onDisconnected?.();
+        }
 
-        // Attempt reconnect with exponential backoff
-        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+        // Attempt reconnect with exponential backoff (only if still mounted)
+        if (mountedRef.current && reconnectAttemptsRef.current < maxReconnectAttempts) {
           const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
           console.log(`[WS] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
 
           reconnectTimeoutRef.current = setTimeout(() => {
-            reconnectAttemptsRef.current++;
-            connect();
+            if (mountedRef.current) {
+              reconnectAttemptsRef.current++;
+              connect();
+            }
           }, delay);
-        } else {
+        } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
           console.error('[WS] Max reconnect attempts reached');
         }
       };
 
       ws.onerror = (error) => {
         console.error('[WS] Error:', error);
-        options.onError?.(error);
+        globalWsConnecting = false;
+        if (mountedRef.current) {
+          options.onError?.(error);
+        }
       };
 
       ws.onmessage = handleMessage;
@@ -142,6 +169,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       wsRef.current = ws;
     } catch (err) {
       console.error('[WS] Failed to connect:', err);
+      globalWsConnecting = false;
     }
   }, [handleMessage, setConnected, options]);
 
@@ -182,24 +210,26 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     send({ type: 'ping' });
   }, [send]);
 
-  // Disconnect
+  // Disconnect (don't close global socket, just cleanup local refs)
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-    reconnectAttemptsRef.current = maxReconnectAttempts; // Prevent auto-reconnect
-
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    setConnected(false);
-  }, [setConnected]);
+    // Don't close the global socket - other components might need it
+    wsRef.current = null;
+  }, []);
 
   // Auto-connect on mount
   useEffect(() => {
-    connect();
+    mountedRef.current = true;
+
+    // Small delay to avoid React Strict Mode double-mount race condition
+    const connectTimeout = setTimeout(() => {
+      if (mountedRef.current) {
+        connect();
+      }
+    }, 100);
 
     // Ping every 30 seconds to keep connection alive
     const pingInterval = setInterval(() => {
@@ -209,6 +239,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     }, 30000);
 
     return () => {
+      mountedRef.current = false;
+      clearTimeout(connectTimeout);
       clearInterval(pingInterval);
       disconnect();
     };
