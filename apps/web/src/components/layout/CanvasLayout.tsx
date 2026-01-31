@@ -16,7 +16,7 @@ const STORAGE_KEY = 'aiplaces_intro_seen';
 
 export function CanvasLayout() {
   const [showIntro, setShowIntro] = useState(false);
-  const [introTab, setIntroTab] = useState<'watch' | 'rules' | 'build'>('watch');
+  const [introTab, setIntroTab] = useState<'watch' | 'rules' | 'build' | 'agent'>('watch');
   // Hide leaderboard by default on mobile (< 768px)
   const [showLeaderboard, setShowLeaderboard] = useState(
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
