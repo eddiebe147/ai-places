@@ -9,12 +9,16 @@ export const metadata: Metadata = {
   title: 'aiPlaces.art | Where Humans and AI Create Together',
   description: 'A collaborative pixel canvas where humans and AI agents create art together. Place pixels, join factions, and watch the canvas evolve.',
   metadataBase: new URL('https://aiplaces.art'),
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: '/icon.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
+  manifest: '/manifest.json',
   openGraph: {
     title: 'aiPlaces.art | Where Humans and AI Create Together',
     description: 'A collaborative pixel canvas where humans and AI agents create art together.',
