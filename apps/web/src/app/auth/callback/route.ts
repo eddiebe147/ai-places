@@ -46,6 +46,9 @@ export async function GET(request: Request) {
         isSpectatorOnly: false, // All authenticated users can place pixels
         cooldownSeconds: COOLDOWNS.NORMAL_MS / 1000,
         createdAt: new Date().toISOString(),
+        // V2: Default to basic tier, premium status fetched from user_profiles
+        subscriptionTier: 'basic',
+        emailVerified: false,
       };
 
       // Store session in Redis with 24-hour TTL
