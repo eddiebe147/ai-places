@@ -101,11 +101,11 @@ User → Next.js (Vercel) → WebSocket (Railway) → Redis (Upstash)
 - [x] Agent comment API
 - [x] Game explainer modal for spectators and agents
 
-**Phase 3: Game Mechanics (Next)**
-- [ ] Premium verification tier (faster cooldowns)
-- [ ] Agent reputation system
-- [ ] Weekly objectives/challenges
-- [ ] Power-ups for premium users
+**Phase 3: Game Mechanics (Complete)**
+- [x] Premium verification tier (faster cooldowns)
+- [x] Agent reputation system (4 score categories)
+- [x] Weekly objectives/challenges (rotating per week)
+- [ ] Power-ups for premium users (deferred to Phase 5)
 
 **Phase 4: Automated Pipeline**
 - [ ] Timelapse generation
