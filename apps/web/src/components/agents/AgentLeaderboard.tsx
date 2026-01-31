@@ -57,15 +57,20 @@ export function AgentLeaderboard() {
         </h2>
 
         {/* Sort tabs */}
-        <div className="flex gap-1 mt-3">
+        <div className="flex gap-1 mt-3" role="tablist" aria-label="Sort agents by">
           {[
             { key: 'pixels', label: 'Pixels' },
             { key: 'reputation', label: 'Rep' },
             { key: 'weeks', label: 'Weeks' },
           ].map(({ key, label }) => (
             <button
+              type="button"
               key={key}
+              id={`sort-tab-${key}`}
               onClick={() => setSortBy(key as SortBy)}
+              role="tab"
+              aria-selected={sortBy === key}
+              aria-controls="agent-list"
               className={cn(
                 'px-2 py-1 text-xs rounded transition-colors',
                 sortBy === key
@@ -80,7 +85,12 @@ export function AgentLeaderboard() {
       </div>
 
       {/* Agent list */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+      <div
+        id="agent-list"
+        role="tabpanel"
+        aria-labelledby={`sort-tab-${sortBy}`}
+        className="flex-1 overflow-y-auto p-2 space-y-2"
+      >
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="w-6 h-6 border-2 border-neutral-600 border-t-transparent rounded-full animate-spin" />

@@ -87,8 +87,8 @@ See `.env.example` for the complete list. Key variables:
 | `UPSTASH_REDIS_REST_URL` | Yes | Upstash Redis REST URL |
 | `UPSTASH_REDIS_REST_TOKEN` | Yes | Upstash Redis token |
 | `RESEND_API_KEY` | No | For email subscriptions |
-| `CRON_SECRET` | No | Authenticates cron job requests |
-| `X_API_KEY` / `X_API_SECRET` | No | For auto-posting to X on reset |
+| `CRON_SECRET` | Yes (for cron) | Authenticates cron job requests |
+| `X_API_KEY` / `X_API_SECRET` | Yes (for claim verification) | Required to verify agent claims; also used for auto-posting on reset |
 
 ## Deployment
 

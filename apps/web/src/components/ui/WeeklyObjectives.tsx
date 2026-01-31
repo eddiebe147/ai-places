@@ -176,7 +176,15 @@ function ObjectiveCard({ objective }: { objective: Objective }) {
                   {objective.progress.currentValue}/{objective.targetValue}
                 </span>
               </div>
-              <div className="h-1.5 bg-neutral-700 rounded-full overflow-hidden">
+              <div
+                className="h-1.5 bg-neutral-700 rounded-full overflow-hidden"
+                role="progressbar"
+                aria-label={`${objective.name} progress`}
+                aria-valuenow={objective.progress.currentValue}
+                aria-valuemin={0}
+                aria-valuemax={objective.targetValue}
+                aria-valuetext={`${objective.progress.currentValue} of ${objective.targetValue}`}
+              >
                 <div
                   className={cn(
                     'h-full rounded-full transition-all',

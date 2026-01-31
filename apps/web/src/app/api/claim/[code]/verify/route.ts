@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { TwitterApi } from 'twitter-api-v2';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,28 @@ function getSupabaseAdmin() {
   return createClient(url, serviceKey, {
     auth: { persistSession: false },
   });
+}
+
+function getTwitterClient(): TwitterApi | null {
+  const appKey = process.env.X_API_KEY;
+  const appSecret = process.env.X_API_SECRET;
+  const accessToken = process.env.X_ACCESS_TOKEN;
+  const accessSecret = process.env.X_ACCESS_SECRET;
+
+  if (!appKey || !appSecret) {
+    return null;
+  }
+
+  if (accessToken && accessSecret) {
+    return new TwitterApi({
+      appKey,
+      appSecret,
+      accessToken,
+      accessSecret,
+    });
+  }
+
+  return new TwitterApi({ appKey, appSecret });
 }
 
 export async function POST(
@@ -68,13 +91,70 @@ export async function POST(
       );
     }
 
-    // In a production system, we would:
-    // 1. Use Twitter API to search for tweets from owner_x_username
-    // 2. Verify a tweet contains the verification_code
-    // 3. Only then mark as verified
-    //
-    // For now, we trust the user and mark as verified
-    // TODO: Implement Twitter API verification
+    // Verify ownership via X (Twitter) API
+    const twitterClient = getTwitterClient();
+    if (!twitterClient) {
+      return NextResponse.json(
+        { error: 'Verification unavailable. X API credentials not configured.' },
+        { status: 503 }
+      );
+    }
+
+    const normalizedUsername = owner_x_username.replace(/^@/, '').toLowerCase();
+
+    let userId: string | null = null;
+    try {
+      const userResult = await twitterClient.v2.userByUsername(normalizedUsername, {
+        'user.fields': ['id'],
+      });
+      userId = userResult?.data?.id || null;
+    } catch (error) {
+      console.error('X verification: failed to look up user:', error);
+      return NextResponse.json(
+        { error: 'Unable to verify X username' },
+        { status: 502 }
+      );
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'X user not found' },
+        { status: 404 }
+      );
+    }
+
+    let hasVerificationTweet = false;
+    try {
+      const timeline = await twitterClient.v2.userTimeline(userId, {
+        max_results: 20,
+        exclude: ['replies', 'retweets'],
+        'tweet.fields': ['created_at', 'text'],
+      });
+
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const tweets = timeline.tweets || [];
+
+      hasVerificationTweet = tweets.some((tweet) => {
+        if (!tweet.text) return false;
+        if (!tweet.text.includes(agent.verification_code)) return false;
+        if (!tweet.created_at) return true;
+        const createdAt = Date.parse(tweet.created_at);
+        return Number.isNaN(createdAt) || createdAt >= sevenDaysAgo;
+      });
+    } catch (error) {
+      console.error('X verification: failed to read timeline:', error);
+      return NextResponse.json(
+        { error: 'Unable to verify ownership tweet' },
+        { status: 502 }
+      );
+    }
+
+    if (!hasVerificationTweet) {
+      return NextResponse.json(
+        { error: 'Verification tweet not found. Please tweet the code and try again.' },
+        { status: 403 }
+      );
+    }
 
     // Update agent status
     const { error: updateError } = await supabase

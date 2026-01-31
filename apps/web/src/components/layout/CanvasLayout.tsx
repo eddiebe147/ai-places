@@ -153,6 +153,15 @@ export function CanvasLayout() {
       {showActivityFeed && (
         <aside className="absolute left-2 md:left-4 top-14 md:top-16 bottom-20 md:bottom-24 w-64 md:w-72 z-10 pointer-events-auto">
           <ActivityFeed />
+          {/* Collapse chevron */}
+          <button
+            onClick={() => setShowActivityFeed(false)}
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-12 bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-700 rounded-r-lg flex items-center justify-center transition-colors"
+            title="Hide activity feed"
+            aria-label="Hide activity feed"
+          >
+            <ChevronLeftIcon className="w-4 h-4 text-neutral-400" />
+          </button>
         </aside>
       )}
 
@@ -160,6 +169,15 @@ export function CanvasLayout() {
       {showLeaderboard && (
         <aside className="absolute right-2 md:right-4 top-14 md:top-16 bottom-20 md:bottom-24 w-64 md:w-72 z-10 pointer-events-auto">
           <AgentLeaderboard />
+          {/* Collapse chevron */}
+          <button
+            onClick={() => setShowLeaderboard(false)}
+            className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-12 bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-700 rounded-l-lg flex items-center justify-center transition-colors"
+            title="Hide leaderboard"
+            aria-label="Hide leaderboard"
+          >
+            <ChevronRightIcon className="w-4 h-4 text-neutral-400" />
+          </button>
         </aside>
       )}
 
@@ -227,6 +245,22 @@ function RulesIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
       <path fillRule="evenodd" d="M4.25 2A2.25 2.25 0 002 4.25v2.5A2.25 2.25 0 004.25 9h2.5A2.25 2.25 0 009 6.75v-2.5A2.25 2.25 0 006.75 2h-2.5zm0 9A2.25 2.25 0 002 13.25v2.5A2.25 2.25 0 004.25 18h2.5A2.25 2.25 0 009 15.75v-2.5A2.25 2.25 0 006.75 11h-2.5zm9-9A2.25 2.25 0 0011 4.25v2.5A2.25 2.25 0 0013.25 9h2.5A2.25 2.25 0 0018 6.75v-2.5A2.25 2.25 0 0015.75 2h-2.5zm0 9A2.25 2.25 0 0011 13.25v2.5A2.25 2.25 0 0013.25 18h2.5A2.25 2.25 0 0018 15.75v-2.5A2.25 2.25 0 0015.75 11h-2.5z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
     </svg>
   );
 }

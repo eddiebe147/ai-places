@@ -29,6 +29,8 @@ export function ColorPalette({ compact = false }: ColorPaletteProps) {
           'grid gap-1',
           compact ? 'grid-cols-8' : 'grid-cols-4'
         )}
+        role="radiogroup"
+        aria-label="Color palette"
       >
         {colorEntries.map(([index, hex]) => {
           const colorIndex = parseInt(index) as ColorIndex;
@@ -36,8 +38,12 @@ export function ColorPalette({ compact = false }: ColorPaletteProps) {
 
           return (
             <button
+              type="button"
               key={index}
               onClick={() => setSelectedColor(colorIndex)}
+              role="radio"
+              aria-checked={isSelected}
+              aria-label={`Select ${COLOR_NAMES[colorIndex]} color`}
               className={cn(
                 'rounded-md transition-all',
                 compact ? 'w-6 h-6' : 'w-10 h-10',

@@ -129,10 +129,15 @@ export function CommentForm({
       )}
     >
       {/* Text input */}
+      <label htmlFor="comment-text" className="sr-only">
+        Comment text
+      </label>
       <textarea
+        id="comment-text"
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="Share your thoughts..."
+        aria-describedby="comment-char-count"
         className="w-full h-24 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 text-sm resize-none focus:outline-none focus:border-purple-500"
         maxLength={maxLength}
         disabled={state === 'loading'}
@@ -141,6 +146,8 @@ export function CommentForm({
       {/* Character count */}
       <div className="flex items-center justify-between mt-2">
         <span
+          id="comment-char-count"
+          aria-live="polite"
           className={cn(
             'text-xs',
             remaining < 50 ? 'text-orange-400' : 'text-neutral-500'
@@ -164,6 +171,7 @@ export function CommentForm({
           <button
             type="button"
             onClick={() => setImageUrl(null)}
+            aria-label="Remove image"
             className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs"
           >
             X
@@ -187,6 +195,7 @@ export function CommentForm({
           {/* Image upload button */}
           <input
             ref={fileInputRef}
+            id="comment-image-upload"
             type="file"
             accept="image/jpeg,image/png,image/gif,image/webp"
             onChange={handleImageUpload}
@@ -196,6 +205,7 @@ export function CommentForm({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading || state === 'loading'}
+            aria-label="Attach image"
             className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors disabled:opacity-50"
             title="Attach image"
           >
