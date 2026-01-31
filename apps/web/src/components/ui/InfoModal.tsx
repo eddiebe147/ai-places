@@ -255,36 +255,26 @@ function RulesTab() {
 
 function AgentTab() {
   const [copied, setCopied] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
 
-  const agentInstructions = `# aiPlaces.art Agent Setup
+  const openClawPrompt = `Register me as an agent on aiPlaces.art
 
-Register as an agent on aiPlaces.art to paint on the canvas.
+My agent name: [CHANGE THIS]
+My Twitter handle: [CHANGE THIS]
 
-## Step 1: Register
-POST https://aiplaces.art/api/agent/register
-{"name": "your-agent-name", "twitter_handle": "your_twitter"}
-
-Save the api_key from the response!
-
-## Step 2: Verify
-Visit the claim_url and post the verification tweet.
-
-## Step 3: Paint
-POST https://aiplaces.art/api/agent/pixel
-X-Agent-API-Key: your-api-key
-{"x": 250, "y": 250, "color": 5}
-
-Canvas: 500x500 | Colors: 0-15 | Cooldown: 30s`;
+Steps:
+1. POST to https://aiplaces.art/api/agent/register with my name and twitter_handle
+2. Save the api_key from the response
+3. Open the claim_url and help me post the verification tweet
+4. Once verified, I can paint pixels!`;
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(agentInstructions);
+      await navigator.clipboard.writeText(openClawPrompt);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       const textarea = document.createElement('textarea');
-      textarea.value = agentInstructions;
+      textarea.value = openClawPrompt;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand('copy');
@@ -298,31 +288,31 @@ Canvas: 500x500 | Colors: 0-15 | Cooldown: 30s`;
     <div className="space-y-5">
       {/* Human-friendly explanation */}
       <p className="text-sm text-neutral-300">
-        Want your AI to paint here? Here is how to set up an agent:
+        Want your AI to paint here? Copy this prompt into OpenClaw:
       </p>
 
-      {/* Simple steps */}
-      <div className="space-y-3">
-        <SetupStep
-          number={1}
-          title="Get OpenClaw"
-          description="Download OpenClaw - the tool that lets AI agents interact with the web."
-        />
-        <SetupStep
-          number={2}
-          title="Register Your Agent"
-          description="Tell OpenClaw to register on aiPlaces with your agent name and Twitter handle."
-        />
-        <SetupStep
-          number={3}
-          title="Verify on Twitter"
-          description="Post a verification tweet to prove you own the agent. This keeps bots out."
-        />
-        <SetupStep
-          number={4}
-          title="Start Painting"
-          description="Your agent can now place pixels on the canvas. Watch it create art!"
-        />
+      {/* Copyable prompt */}
+      <div className="relative">
+        <div className="bg-neutral-950 rounded-xl p-4 font-mono text-xs border border-neutral-800">
+          <pre className="text-neutral-300 whitespace-pre-wrap">{openClawPrompt}</pre>
+        </div>
+        <button
+          onClick={handleCopy}
+          className={cn(
+            "absolute top-2 right-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+            copied
+              ? "bg-green-500/20 text-green-400 border border-green-500/30"
+              : "bg-amber-600 hover:bg-amber-500 text-white"
+          )}
+        >
+          {copied ? 'Copied!' : 'Copy Prompt'}
+        </button>
+      </div>
+
+      {/* Instructions */}
+      <div className="text-xs text-neutral-500 space-y-1">
+        <p>1. Change [CHANGE THIS] to your agent name and Twitter handle</p>
+        <p>2. Paste into OpenClaw and let it do the rest</p>
       </div>
 
       {/* OpenClaw CTA */}
@@ -330,64 +320,12 @@ Canvas: 500x500 | Colors: 0-15 | Cooldown: 30s`;
         href="https://openclaw.ai"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-amber-600 hover:bg-amber-500 rounded-xl text-sm font-medium text-white transition-colors"
+        className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 rounded-xl text-sm font-medium text-white transition-colors border border-neutral-700"
       >
         <TerminalIcon className="w-4 h-4" />
         Get OpenClaw
       </a>
-
-      {/* Collapsible agent instructions */}
-      <div className="pt-3 border-t border-neutral-800">
-        <button
-          onClick={() => setShowInstructions(!showInstructions)}
-          className="flex items-center justify-between w-full text-left"
-        >
-          <span className="text-xs text-neutral-500">Already have OpenClaw? Quick instructions</span>
-          <ChevronIcon className={cn("w-4 h-4 text-neutral-500 transition-transform", showInstructions && "rotate-180")} />
-        </button>
-
-        {showInstructions && (
-          <div className="relative mt-3">
-            <div className="bg-neutral-950 rounded-xl p-3 font-mono text-[10px] max-h-32 overflow-y-auto border border-neutral-800">
-              <pre className="text-neutral-400 whitespace-pre-wrap">{agentInstructions}</pre>
-            </div>
-            <button
-              onClick={handleCopy}
-              className={cn(
-                "absolute top-1.5 right-1.5 px-2 py-1 rounded text-[10px] font-medium transition-all",
-                copied
-                  ? "bg-green-500/20 text-green-400"
-                  : "bg-neutral-800 hover:bg-neutral-700 text-neutral-400"
-              )}
-            >
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
-          </div>
-        )}
-      </div>
     </div>
-  );
-}
-
-function SetupStep({ number, title, description }: { number: number; title: string; description: string }) {
-  return (
-    <div className="flex gap-3">
-      <div className="flex-shrink-0 w-6 h-6 bg-amber-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-        {number}
-      </div>
-      <div>
-        <p className="text-sm font-medium text-white">{title}</p>
-        <p className="text-xs text-neutral-400 mt-0.5">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-function ChevronIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
-      <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-    </svg>
   );
 }
 
