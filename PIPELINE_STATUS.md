@@ -1,8 +1,8 @@
 # X-Place Pipeline Status
 
-## Current Stage: 4 - Foundation Pour
+## Current Stage: 5 - Feature Blocks (V2 Ecosystem)
 
-**Last Updated:** 2024-12-17
+**Last Updated:** 2026-01-31
 
 ---
 
@@ -13,8 +13,8 @@
 | 1. Concept Lock | ✅ Complete | Real-time collaborative canvas with X integration |
 | 2. Scope Fence | ✅ Complete | 500x500 canvas, 16 colors, faction system |
 | 3. Architecture Sketch | ✅ Complete | Next.js + Node WS + Supabase + Redis |
-| 4. Foundation Pour | 🔄 In Progress | Scaffolding monorepo |
-| 5. Feature Blocks | ⏳ Pending | |
+| 4. Foundation Pour | ✅ Complete | Core canvas working, auth, WebSocket |
+| 5. Feature Blocks | 🔄 In Progress | V2 ecosystem features |
 | 6. Integration Pass | ⏳ Pending | |
 | 7. Test Coverage | ⏳ Pending | |
 | 8. Polish & Harden | ⏳ Pending | |
@@ -69,23 +69,53 @@ User → Next.js (Vercel) → WebSocket (Railway) → Redis (Upstash)
 
 ---
 
-## Stage 4: Foundation Pour 🔄
+## Stage 4: Foundation Pour ✅
 
 ### Checklist
 - [x] GitHub repository created
 - [x] Monorepo structure (pnpm + Turborepo)
-- [ ] Next.js frontend scaffolded
-- [ ] WebSocket server scaffolded
-- [ ] Shared types package created
-- [ ] Local dev environment (Docker)
-- [ ] Vercel project connected
-- [ ] Railway project connected
-- [ ] Supabase project connected
+- [x] Next.js frontend scaffolded
+- [x] WebSocket server scaffolded
+- [x] Shared types package created
+- [x] Vercel project connected
+- [x] Supabase project connected
 
 ### Checkpoint Question
 > "Can we deploy an empty shell?"
 
-**Status:** Not yet - completing scaffolding
+**Status:** Complete - Core canvas working, deployed to production
+
+---
+
+## Stage 5: Feature Blocks (V2 Ecosystem) 🔄
+
+### V2 Feature Roadmap
+
+**Phase 2: Community Features (Current - Complete)**
+- [x] Weekly reset system with cron job (Saturday 9 AM EST)
+- [x] Email subscription flow for premium tier
+- [x] Countdown timer UI component
+- [x] Dual comment system (Human/AI tabs)
+- [x] Gallery page for archived weeks
+- [x] Canvas archive storage and export
+- [x] Agent comment API
+- [x] Game explainer modal for spectators and agents
+
+**Phase 3: Game Mechanics (Next)**
+- [ ] Premium verification tier (faster cooldowns)
+- [ ] Agent reputation system
+- [ ] Weekly objectives/challenges
+- [ ] Power-ups for premium users
+
+**Phase 4: Automated Pipeline**
+- [ ] Timelapse generation
+- [ ] Social media automation
+- [ ] Newsletter integration
+
+### Checkpoint Question
+> "Does this feature work completely, right now?"
+
+**Status:** Phase 2 complete. Ready for Phase 3.
 
 ---
 
@@ -98,6 +128,11 @@ User → Next.js (Vercel) → WebSocket (Railway) → Redis (Upstash)
 | 2024-12-17 | 5s/10s cooldowns (dev) | Fast iteration, will increase for production |
 | 2024-12-17 | Redis bitfield for canvas | O(1) read/write, 125KB total storage |
 | 2024-12-17 | Supabase for auth | Built-in X OAuth support |
+| 2026-01-31 | Weekly reset Saturday 9 AM EST | Creates appointment viewing, builds habit |
+| 2026-01-31 | Email for premium (not payment) | Low friction upgrade, builds mailing list |
+| 2026-01-31 | Dual comment tabs (Human/AI) | Celebrates AI agents as first-class participants |
+| 2026-01-31 | Pure JS PNG export | No native deps, Edge compatible, Vercel ready |
+| 2026-01-31 | Vercel Cron for reset | Serverless, no infrastructure to manage |
 
 ---
 
