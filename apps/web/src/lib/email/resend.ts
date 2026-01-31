@@ -7,7 +7,7 @@ import { Resend } from 'resend';
 
 let resend: Resend | null = null;
 
-function getResend(): Resend {
+export function getResend(): Resend {
   if (!resend) {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
@@ -18,7 +18,7 @@ function getResend(): Resend {
   return resend;
 }
 
-const FROM_EMAIL = 'AIplaces.art <noreply@aiplaces.art>';
+export const FROM_EMAIL = 'AIplaces.art <noreply@aiplaces.art>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 interface SendVerificationEmailParams {

@@ -26,6 +26,8 @@ import {
   createWeekConfig,
 } from '@aiplaces/shared';
 import { exportAndUploadCanvas } from '@/lib/services/canvas-export';
+import { postWeeklyArchiveToX, isXPostingEnabled } from '@/lib/services/x-post';
+import { sendWeeklyNewsletter, type NewsletterData } from '@/lib/email/newsletter';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60 second timeout for cron
@@ -192,6 +194,40 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     ]);
 
+    // 8.5. Post to X (Twitter) - don't fail reset if this fails
+    let xPostResult: { success: boolean; postUrl?: string; error?: string } | null = null;
+    if (isXPostingEnabled()) {
+      try {
+        console.log('[CRON] Posting weekly archive to X...');
+        xPostResult = await postWeeklyArchiveToX({
+          id: archive.id,
+          week_number: currentConfig.weekNumber,
+          year: currentConfig.year,
+          image_url: imageUrl,
+          thumbnail_url: thumbnailUrl,
+          total_pixels_placed: totalPixelsPlaced,
+          unique_contributors: contributorsCount || 0,
+          metadata: {
+            top_contributors: top10,
+            top_factions: topFactions,
+          },
+        });
+        if (xPostResult.success) {
+          console.log(`[CRON] Posted to X: ${xPostResult.postUrl}`);
+        } else {
+          console.warn(`[CRON] X posting failed: ${xPostResult.error}`);
+        }
+      } catch (xError) {
+        console.error('[CRON] X posting error (non-fatal):', xError);
+        xPostResult = {
+          success: false,
+          error: xError instanceof Error ? xError.message : 'Unknown X posting error',
+        };
+      }
+    } else {
+      console.log('[CRON] X posting is disabled');
+    }
+
     // 9. Clear Redis state for new week
     // Backup canvas before clearing
     await redis.set(REDIS_KEYS.CANVAS_BACKUP, canvasDataStr || '');
@@ -238,6 +274,42 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     await redis.publish(REDIS_KEYS.PUBSUB_WEEK, JSON.stringify(resetEvent));
 
+    // 13. Send weekly newsletter to premium subscribers - don't fail reset if this fails
+    let newsletterResult: { success: boolean; sent: number; failed: number; errors: string[] } | null = null;
+    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://aiplaces.art';
+
+    try {
+      console.log('[CRON] Sending weekly newsletter...');
+      const newsletterData: NewsletterData = {
+        archiveId: archive.id,
+        weekNumber: currentConfig.weekNumber,
+        year: currentConfig.year,
+        imageUrl: imageUrl || '',
+        stats: {
+          totalPixels: totalPixelsPlaced,
+          contributors: contributorsCount || 0,
+        },
+        topContributors: top10,
+        galleryUrl: `${APP_URL}/gallery/${archive.id}`,
+      };
+
+      newsletterResult = await sendWeeklyNewsletter(newsletterData);
+
+      if (newsletterResult.success) {
+        console.log(`[CRON] Newsletter sent to ${newsletterResult.sent} subscribers`);
+      } else {
+        console.warn(`[CRON] Newsletter partially failed: ${newsletterResult.sent} sent, ${newsletterResult.failed} failed`);
+      }
+    } catch (newsletterError) {
+      console.error('[CRON] Newsletter error (non-fatal):', newsletterError);
+      newsletterResult = {
+        success: false,
+        sent: 0,
+        failed: 0,
+        errors: [newsletterError instanceof Error ? newsletterError.message : 'Unknown newsletter error'],
+      };
+    }
+
     const duration = Date.now() - startTime;
     console.log(`[CRON] Weekly reset completed in ${duration}ms`);
 
@@ -250,6 +322,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         totalPixelsPlaced,
         uniqueContributors: contributorsCount || 0,
         imagesUploaded: !!imageUrl,
+      },
+      social: {
+        xEnabled: isXPostingEnabled(),
+        xPosted: xPostResult?.success ?? false,
+        xPostUrl: xPostResult?.postUrl ?? null,
+        xError: xPostResult?.error ?? null,
+      },
+      newsletter: {
+        sent: newsletterResult?.sent ?? 0,
+        failed: newsletterResult?.failed ?? 0,
+        success: newsletterResult?.success ?? false,
+        errors: newsletterResult?.errors ?? [],
       },
       duration,
     });

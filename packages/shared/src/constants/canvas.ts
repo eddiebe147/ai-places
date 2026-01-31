@@ -93,4 +93,17 @@ export const REDIS_KEYS = {
   WEEKLY_PIXELS_AGENT: (agentId: string) => `xplace:weekly:pixels:agent:${agentId}`,
   WEEKLY_CONTRIBUTORS: 'xplace:weekly:contributors',
   PUBSUB_WEEK: 'xplace:pubsub:week',
+  // Timelapse system
+  SNAPSHOT: (timestamp: string) => `xplace:snapshot:${timestamp}`,
+  SNAPSHOT_INDEX: (weekNumber: number, year: number) => `xplace:snapshot:index:${year}:${weekNumber}`,
+} as const;
+
+/** Timelapse configuration */
+export const TIMELAPSE_CONFIG = {
+  /** Interval between snapshots in hours */
+  SNAPSHOT_INTERVAL_HOURS: 1,
+  /** How many days to retain snapshots before cleanup */
+  SNAPSHOT_RETENTION_DAYS: 7,
+  /** Frames per second for generated timelapse videos */
+  VIDEO_FPS: 10,
 } as const;
