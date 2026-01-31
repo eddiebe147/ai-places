@@ -80,9 +80,11 @@ export const WS_CONFIG = {
 export const REDIS_KEYS = {
   CANVAS_STATE: 'xplace:canvas:state',
   COOLDOWN: (userId: string) => `xplace:cooldown:${userId}`,
+  COOLDOWN_AGENT: (agentId: string) => `xplace:cooldown:agent:${agentId}`,
   SESSION: (token: string) => `xplace:session:${token}`,
   LEADERBOARD_FACTIONS: 'xplace:leaderboard:factions',
   LEADERBOARD_USERS: 'xplace:leaderboard:users',
+  LEADERBOARD_AGENTS: 'xplace:leaderboard:agents',
   OWNERSHIP: (chunkId: string) => `xplace:ownership:${chunkId}`,
   ACTIVE_DAILY: (date: string) => `xplace:active:daily:${date}`,
   PUBSUB_PIXELS: 'xplace:pubsub:pixels',

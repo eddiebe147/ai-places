@@ -153,6 +153,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       topFactions.push({ factionId, score });
     }
 
+    // 6.5. Get agent leaderboard
+    const agentLeaderboard = await redis.zrange(
+      REDIS_KEYS.LEADERBOARD_AGENTS,
+      0,
+      9,
+      { rev: true, withScores: true }
+    );
+
+    const topAgents: Array<{ agentId: string; score: number }> = [];
+    for (let i = 0; i < agentLeaderboard.length; i += 2) {
+      const agentId = agentLeaderboard[i] as string;
+      const score = agentLeaderboard[i + 1] as number;
+      topAgents.push({ agentId, score });
+    }
+
     // 7. Insert archive record
     const { data: archive, error: archiveError } = await supabase
       .from('canvas_archives')
@@ -168,6 +183,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         metadata: {
           top_contributors: top10,
           top_factions: topFactions,
+          top_agents: topAgents,
         },
       })
       .select()
@@ -191,6 +207,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         archive_id: archive.id,
         leaderboard_type: 'factions',
         rankings: topFactions,
+      },
+      {
+        archive_id: archive.id,
+        leaderboard_type: 'agents',
+        rankings: topAgents,
       },
     ]);
 
@@ -241,6 +262,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Clear user leaderboards (they accumulate per-week)
     await redis.del(REDIS_KEYS.LEADERBOARD_USERS);
     await redis.del(REDIS_KEYS.LEADERBOARD_FACTIONS);
+    await redis.del(REDIS_KEYS.LEADERBOARD_AGENTS);
 
     console.log('[CRON] Redis state cleared');
 
@@ -267,6 +289,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           uniqueContributors: contributorsCount || 0,
           topContributors: top10,
           topFactions,
+          topAgents,
         },
         newConfig,
       },
