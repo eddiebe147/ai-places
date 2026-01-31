@@ -130,10 +130,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         createdAt: comment.created_at,
       },
     });
-  } catch (error) {
-    console.error('Agent comment error:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Agent comment error:', errorMessage, error);
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      { error: 'An unexpected error occurred', details: errorMessage },
       { status: 500 }
     );
   }
