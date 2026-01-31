@@ -110,41 +110,44 @@ export function WeeklyObjectives({ className, compact = false }: WeeklyObjective
   );
 }
 
+function getObjectiveStyle(isCompleted: boolean, isPrimary: boolean) {
+  if (isCompleted) {
+    return {
+      card: 'bg-green-500/10 border-green-500/30',
+      iconBg: 'bg-green-500/20',
+      iconColor: 'text-green-400',
+    };
+  }
+  if (isPrimary) {
+    return {
+      card: 'bg-yellow-500/10 border-yellow-500/30',
+      iconBg: 'bg-yellow-500/20',
+      iconColor: 'text-yellow-400',
+    };
+  }
+  return {
+    card: 'bg-neutral-700/50 border-neutral-700',
+    iconBg: 'bg-neutral-600',
+    iconColor: 'text-neutral-400',
+  };
+}
+
 function ObjectiveCard({ objective }: { objective: Objective }) {
-  const isCompleted = objective.progress?.isCompleted;
+  const isCompleted = objective.progress?.isCompleted ?? false;
+  const style = getObjectiveStyle(isCompleted, objective.isPrimary);
 
   return (
-    <div
-      className={cn(
-        'p-3 rounded-lg border transition-colors',
-        isCompleted
-          ? 'bg-green-500/10 border-green-500/30'
-          : objective.isPrimary
-            ? 'bg-yellow-500/10 border-yellow-500/30'
-            : 'bg-neutral-700/50 border-neutral-700'
-      )}
-    >
+    <div className={cn('p-3 rounded-lg border transition-colors', style.card)}>
       <div className="flex items-start gap-3">
         <div
           className={cn(
             'flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center',
-            isCompleted
-              ? 'bg-green-500/20'
-              : objective.isPrimary
-                ? 'bg-yellow-500/20'
-                : 'bg-neutral-600'
+            style.iconBg
           )}
         >
           <ObjectiveIcon
             icon={isCompleted ? 'check' : objective.icon}
-            className={cn(
-              'w-4 h-4',
-              isCompleted
-                ? 'text-green-400'
-                : objective.isPrimary
-                  ? 'text-yellow-400'
-                  : 'text-neutral-400'
-            )}
+            className={cn('w-4 h-4', style.iconColor)}
           />
         </div>
 

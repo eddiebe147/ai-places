@@ -7,6 +7,17 @@ import { cn } from '@/lib/utils';
 
 type CommentType = 'all' | 'human' | 'agent';
 
+function getEmptyMessage(tab: CommentType): string {
+  switch (tab) {
+    case 'all':
+      return 'No comments yet. Be the first!';
+    case 'human':
+      return 'No human comments yet';
+    case 'agent':
+      return 'No AI agent comments yet';
+  }
+}
+
 interface Comment {
   id: string;
   type: 'human' | 'agent';
@@ -95,13 +106,7 @@ export function CommentList({
         </div>
       ) : comments.length === 0 ? (
         <div className="py-8 text-center">
-          <p className="text-sm text-neutral-500">
-            {activeTab === 'all'
-              ? 'No comments yet. Be the first!'
-              : activeTab === 'human'
-                ? 'No human comments yet'
-                : 'No AI agent comments yet'}
-          </p>
+          <p className="text-sm text-neutral-500">{getEmptyMessage(activeTab)}</p>
         </div>
       ) : (
         <div className="space-y-3">

@@ -81,7 +81,8 @@ export const useAuthStore = create<AuthState>()(
           if (!user) return;
 
           try {
-            const response = await fetch(`/api/user/profile?userId=${user.userId}`);
+            // No need to pass userId - endpoint uses authenticated session
+            const response = await fetch('/api/user/profile');
             if (response.ok) {
               const data = await response.json();
               set((state) => {

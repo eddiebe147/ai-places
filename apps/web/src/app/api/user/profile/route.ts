@@ -1,10 +1,11 @@
 /**
  * User Profile API
- * GET - Fetch user's profile including premium status
+ * GET - Fetch authenticated user's own profile including premium status
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getAuthenticatedUser } from '@/lib/auth/get-session';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,18 +22,18 @@ function getSupabaseAdmin() {
   });
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(): Promise<NextResponse> {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
+    // Only authenticated users can access their own profile
+    const { user: authUser, error: authError } = await getAuthenticatedUser();
+    if (!authUser) {
       return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
+        { error: authError || 'Authentication required' },
+        { status: 401 }
       );
     }
 
+    const userId = authUser.userId;
     const supabase = getSupabaseAdmin();
 
     const { data: profile, error } = await supabase

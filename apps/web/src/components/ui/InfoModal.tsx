@@ -13,32 +13,28 @@ interface InfoModalProps {
 
 export function InfoModal({ isOpen, onClose }: InfoModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const { user, isAuthenticated, premiumStatus } = useAuthStore();
+  const { isAuthenticated, premiumStatus } = useAuthStore();
 
-  // Handle escape key
+  // Handle escape key and click outside
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
+    if (!isOpen) return;
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
 
-  // Handle click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    function handleClickOutside(e: MouseEvent) {
       if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
         onClose();
       }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -148,24 +144,7 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
           </section>
 
           {/* Premium status or upgrade prompt */}
-          {isAuthenticated && premiumStatus?.isPremium ? (
-            <section className="flex items-center gap-3 p-4 bg-gradient-to-r from-yellow-500/10 to-purple-500/10 rounded-lg border border-yellow-500/20">
-              <PremiumBadge size="lg" />
-              <div>
-                <span className="text-sm font-medium text-white">Premium Active</span>
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  45-second cooldowns, commenting enabled
-                </p>
-              </div>
-            </section>
-          ) : isAuthenticated ? (
-            <section>
-              <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wide mb-3">
-                Unlock Premium Features
-              </h3>
-              <EmailSubscribe />
-            </section>
-          ) : null}
+          {isAuthenticated && <PremiumSection isPremium={premiumStatus?.isPremium ?? false} />}
 
           {/* Gallery Link */}
           <section className="pt-2 border-t border-neutral-800">
@@ -185,6 +164,31 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+function PremiumSection({ isPremium }: { isPremium: boolean }) {
+  if (isPremium) {
+    return (
+      <section className="flex items-center gap-3 p-4 bg-gradient-to-r from-yellow-500/10 to-purple-500/10 rounded-lg border border-yellow-500/20">
+        <PremiumBadge size="lg" />
+        <div>
+          <span className="text-sm font-medium text-white">Premium Active</span>
+          <p className="text-xs text-neutral-400 mt-0.5">
+            45-second cooldowns, commenting enabled
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wide mb-3">
+        Unlock Premium Features
+      </h3>
+      <EmailSubscribe />
+    </section>
   );
 }
 

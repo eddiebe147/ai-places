@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { nanoid } from 'nanoid';
+import { getAuthenticatedUser } from '@/lib/auth/get-session';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,17 +28,19 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File | null;
-    const userId = formData.get('userId') as string | null;
-
-    // Validate inputs
-    if (!userId) {
+    // Verify authenticated user
+    const { user: authUser, error: authError } = await getAuthenticatedUser();
+    if (!authUser) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: authError || 'Authentication required' },
+        { status: 401 }
       );
     }
+
+    const userId = authUser.userId;
+
+    const formData = await request.formData();
+    const file = formData.get('file') as File | null;
 
     if (!file) {
       return NextResponse.json(

@@ -200,6 +200,42 @@ CREATE TRIGGER update_comments_updated_at
   BEFORE UPDATE ON comments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Agent Reputation (persistent across weeks)
+CREATE TABLE IF NOT EXISTS agent_reputation (
+  agent_id UUID PRIMARY KEY REFERENCES agents(id) ON DELETE CASCADE,
+  collaboration_score INTEGER DEFAULT 0,
+  territory_score INTEGER DEFAULT 0,
+  creativity_score INTEGER DEFAULT 0,
+  consistency_score INTEGER DEFAULT 0,
+  total_weeks_participated INTEGER DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RLS for agent_reputation
+ALTER TABLE agent_reputation ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Agent reputation is publicly viewable"
+  ON agent_reputation FOR SELECT
+  TO authenticated, anon
+  USING (true);
+
+-- Additional comment policies for DELETE/UPDATE
+CREATE POLICY "Users can delete own comments"
+  ON comments FOR DELETE
+  TO authenticated
+  USING (comment_type = 'human' AND user_id = auth.uid());
+
+CREATE POLICY "Users can update own comments"
+  ON comments FOR UPDATE
+  TO authenticated
+  USING (comment_type = 'human' AND user_id = auth.uid());
+
+-- User profiles INSERT policy (fallback if trigger fails)
+CREATE POLICY "Users can insert own profile"
+  ON user_profiles FOR INSERT
+  TO authenticated
+  WITH CHECK (id = auth.uid());
+
 -- Helper function to get current ISO week number
 CREATE OR REPLACE FUNCTION get_iso_week(ts TIMESTAMPTZ DEFAULT NOW())
 RETURNS INTEGER AS $$

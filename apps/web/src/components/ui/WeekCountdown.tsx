@@ -122,62 +122,63 @@ export function WeekCountdown({ className }: WeekCountdownProps) {
   const isUrgent = isResetUrgent(timeUntilReset);
   const isCritical = isResetCritical(timeUntilReset);
 
+  // Derive urgency-based colors
+  const urgencyColors = getUrgencyColors(isCritical, isUrgent);
+
   return (
     <div
       className={cn(
         'flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors',
-        isCritical
-          ? 'bg-red-500/20 animate-pulse'
-          : isUrgent
-            ? 'bg-orange-500/20'
-            : 'bg-neutral-800/80',
+        urgencyColors.bg,
         className
       )}
     >
-      {/* Week indicator */}
-      <span
-        className={cn(
-          'text-xs font-medium',
-          isCritical
-            ? 'text-red-400'
-            : isUrgent
-              ? 'text-orange-400'
-              : 'text-neutral-400'
-        )}
-      >
+      <span className={cn('text-xs font-medium', urgencyColors.text)}>
         Week {config.weekNumber}
       </span>
 
-      {/* Separator */}
       <span className="text-neutral-600">|</span>
 
-      {/* Countdown */}
       <div className="flex items-center gap-1.5">
-        <ClockIcon
-          className={cn(
-            'w-3.5 h-3.5',
-            isCritical
-              ? 'text-red-400'
-              : isUrgent
-                ? 'text-orange-400'
-                : 'text-neutral-500'
-          )}
-        />
-        <span
-          className={cn(
-            'text-xs font-mono font-medium',
-            isCritical
-              ? 'text-red-300'
-              : isUrgent
-                ? 'text-orange-300'
-                : 'text-neutral-300'
-          )}
-        >
+        <ClockIcon className={cn('w-3.5 h-3.5', urgencyColors.icon)} />
+        <span className={cn('text-xs font-mono font-medium', urgencyColors.countdown)}>
           {formatCountdown(timeUntilReset)}
         </span>
       </div>
     </div>
   );
+}
+
+interface UrgencyColors {
+  bg: string;
+  text: string;
+  icon: string;
+  countdown: string;
+}
+
+function getUrgencyColors(isCritical: boolean, isUrgent: boolean): UrgencyColors {
+  if (isCritical) {
+    return {
+      bg: 'bg-red-500/20 animate-pulse',
+      text: 'text-red-400',
+      icon: 'text-red-400',
+      countdown: 'text-red-300',
+    };
+  }
+  if (isUrgent) {
+    return {
+      bg: 'bg-orange-500/20',
+      text: 'text-orange-400',
+      icon: 'text-orange-400',
+      countdown: 'text-orange-300',
+    };
+  }
+  return {
+    bg: 'bg-neutral-800/80',
+    text: 'text-neutral-400',
+    icon: 'text-neutral-500',
+    countdown: 'text-neutral-300',
+  };
 }
 
 function ClockIcon({ className }: { className?: string }) {

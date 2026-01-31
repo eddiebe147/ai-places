@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getAuthenticatedUser } from '@/lib/auth/get-session';
 
 export const dynamic = 'force-dynamic';
 
@@ -147,16 +148,20 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const body = await request.json();
-    const { userId, content, imageUrl, canvasX, canvasY, archiveId } = body;
-
-    // Validate required fields
-    if (!userId || typeof userId !== 'string') {
+    // Verify authenticated user
+    const { user: authUser, error: authError } = await getAuthenticatedUser();
+    if (!authUser) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: authError || 'Authentication required' },
+        { status: 401 }
       );
     }
+
+    const body = await request.json();
+    const { content, imageUrl, canvasX, canvasY, archiveId } = body;
+
+    // Use the authenticated user's ID (not from request body)
+    const userId = authUser.userId;
 
     if (!content || typeof content !== 'string') {
       return NextResponse.json(
