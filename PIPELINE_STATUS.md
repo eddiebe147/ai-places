@@ -146,17 +146,36 @@ User → Next.js (Vercel) → WebSocket (Railway) → Redis (Upstash)
 ## Stage 7: Test Coverage 🔄
 
 ### Checklist
-- [ ] Unit tests for business logic
-- [ ] Integration tests for API routes
+- [x] Unit tests for business logic (52 tests - canvas constants, cooldowns)
+- [x] Integration tests for API routes (23 tests - agent pixel API)
 - [ ] E2E tests for critical user paths
-- [ ] Agent parity tests
+- [x] Agent parity tests (28 tests - 84.6% API coverage documented)
 - [ ] CRUD tests for all entities
 - [ ] Coverage meets threshold (70%+)
+
+### Current Test Suite
+| Package | Tests | Status |
+|---------|-------|--------|
+| @aiplaces/shared | 52 | Passing |
+| @aiplaces/web | 79 | Passing |
+| **Total** | **131** | **All Green** |
+
+### Test Categories
+- **Canvas constants**: 52 tests (dimensions, cooldowns, Redis keys)
+- **Circuit breaker**: 14 tests (state transitions, thresholds)
+- **Timeout handling**: 16 tests (error propagation, cleanup)
+- **Agent pixel API**: 23 tests (auth, validation, cooldown, placement)
+- **Agent parity**: 26 tests + 2 TODO (UI/Agent capability comparison)
+
+### Agent Parity Coverage
+Agent API coverage: **84.6%** (11 of 13 applicable actions)
+- Gaps: GET /api/canvas, Comment image upload
+- Intentional differences documented (cooldowns, content limits, auth methods)
 
 ### Checkpoint Question
 > "Are all tests green and is coverage sufficient?"
 
-**Status:** Not started.
+**Status:** In progress - 131 tests passing. E2E tests pending.
 
 ---
 

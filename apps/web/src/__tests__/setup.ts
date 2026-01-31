@@ -10,24 +10,17 @@ afterEach(() => {
   cleanup();
 });
 
-// Mock environment variables
+// Mock environment variables for all tests
 vi.stubEnv('NODE_ENV', 'test');
+vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://test.supabase.co');
+vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'test-service-role-key');
+vi.stubEnv('UPSTASH_REDIS_REST_URL', 'https://test.upstash.io');
+vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', 'test-token');
 
-// Mock Redis client
-vi.mock('@/lib/redis/client', () => ({
-  getRedis: vi.fn(() => ({
-    get: vi.fn(),
-    set: vi.fn(),
-    del: vi.fn(),
-    setex: vi.fn(),
-    incr: vi.fn(),
-    zadd: vi.fn(),
-    zrange: vi.fn(),
-    zincrby: vi.fn(),
-  })),
-}));
+// Note: Individual test files should set up their own mocks for Redis and Supabase
+// to control behavior per-test. The global mocks here are minimal defaults.
 
-// Mock Supabase client
+// Mock Supabase server client (used by @/lib/supabase/server)
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(() => ({
     from: vi.fn(() => ({
