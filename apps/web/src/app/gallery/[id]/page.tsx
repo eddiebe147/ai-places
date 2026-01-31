@@ -198,7 +198,7 @@ export default async function ArchiveDetailPage({
               <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
                 <h2 className="text-lg font-semibold mb-4">Game Modes</h2>
                 <div className="space-y-2">
-                  {archive.metadata.objectives.map((objective) => (
+                  {archive.metadata.objectives.map((objective: { id: string; name: string; icon?: string; description?: string; progress?: number }) => (
                     <div
                       key={objective.id}
                       className="p-3 bg-neutral-800 rounded-lg border border-neutral-700"
