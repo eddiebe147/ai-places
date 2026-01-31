@@ -108,15 +108,15 @@ User → Next.js (Vercel) → WebSocket (Railway) → Redis (Upstash)
 - [x] Security hardening (authentication verification on all endpoints)
 - [ ] Power-ups for premium users (deferred to Phase 5)
 
-**Phase 4: Automated Pipeline**
-- [ ] Timelapse generation
-- [ ] Social media automation
-- [ ] Newsletter integration
+**Phase 4: Automated Pipeline (Complete)**
+- [x] Timelapse generation (hourly snapshots, video at reset)
+- [x] Social media automation (auto-post to X on reset)
+- [x] Newsletter integration (weekly email to premium subscribers)
 
 ### Checkpoint Question
 > "Does this feature work completely, right now?"
 
-**Status:** Phase 2 and Phase 3 complete. Security review passed. Ready for Phase 4 or Integration Pass.
+**Status:** Phase 2, 3, and 4 complete. Ready for Stage 6 Integration Pass.
 
 ---
 
