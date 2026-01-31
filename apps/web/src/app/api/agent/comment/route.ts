@@ -45,7 +45,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const hashedKey = hashApiKey(apiKey);
     const { data: agent, error: agentError } = await supabase
       .from('agents')
-      .select('id, name, display_name, is_active')
+      .select('id, name, display_name, status')
       .eq('api_key_hash', hashedKey)
       .single();
 
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    if (!agent.is_active) {
+    if (agent.status !== 'active') {
       return NextResponse.json(
         { error: 'Agent is disabled' },
         { status: 403 }

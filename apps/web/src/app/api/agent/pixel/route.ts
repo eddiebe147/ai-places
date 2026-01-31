@@ -13,6 +13,7 @@ import {
   CANVAS_HEIGHT,
   COLOR_COUNT,
   BITS_PER_PIXEL,
+  CANVAS_DATA_SIZE,
 } from '@aiplaces/shared';
 
 export const dynamic = 'force-dynamic';
@@ -167,9 +168,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // 4. Update canvas using bitfield operation
-    // Upstash Redis uses a fluent builder pattern for bitfield commands
+    // First ensure the canvas exists (initialize if needed)
     const bitOffset = (y * CANVAS_WIDTH + x) * BITS_PER_PIXEL;
     try {
+      // Check if canvas exists and initialize if not
+      const canvasExists = await redis.exists(REDIS_KEYS.CANVAS_STATE);
+      if (!canvasExists) {
+        // Initialize empty canvas (all zeros = white, color 0)
+        const emptyCanvas = Buffer.alloc(CANVAS_DATA_SIZE, 0x00);
+        await redis.set(REDIS_KEYS.CANVAS_STATE, emptyCanvas.toString('binary'));
+        console.log('Pixel API: Initialized empty canvas');
+      }
+
+      // Now perform the bitfield operation
       await redis
         .bitfield(REDIS_KEYS.CANVAS_STATE)
         .set('u4', bitOffset, color)
