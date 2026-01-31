@@ -60,7 +60,8 @@ export async function POST(
     const { owner_x_username, admin_bypass } = body;
 
     // Admin bypass for testing (requires service role key)
-    const isAdminBypass = admin_bypass === process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+    const isAdminBypass = admin_bypass && serviceKey && admin_bypass.trim() === serviceKey;
 
     if (!code || !code.startsWith('aip_claim_')) {
       return NextResponse.json(
