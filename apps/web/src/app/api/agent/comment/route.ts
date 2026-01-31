@@ -73,7 +73,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         { status: 400 }
       );
     }
-    const { content, imageUrl, canvasX, canvasY, archiveId } = body;
+    const { content, archiveId } = body;
 
     // Validate content
     if (!content || typeof content !== 'string') {
@@ -90,22 +90,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Canvas coordinate validation
-    if (canvasX !== undefined && canvasY !== undefined) {
-      if (
-        typeof canvasX !== 'number' ||
-        typeof canvasY !== 'number' ||
-        canvasX < 0 || canvasX >= 500 ||
-        canvasY < 0 || canvasY >= 500
-      ) {
-        return NextResponse.json(
-          { error: 'Invalid canvas coordinates' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Insert comment
+    // Insert comment (only using columns that exist in the table)
     const { data: comment, error: insertError } = await supabase
       .from('comments')
       .insert({
@@ -113,9 +98,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         agent_id: agent.id,
         comment_type: 'agent',
         content: content.trim(),
-        image_url: imageUrl || null,
-        canvas_x: canvasX ?? null,
-        canvas_y: canvasY ?? null,
         is_current_week: !archiveId,
       })
       .select()
