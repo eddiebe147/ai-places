@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -24,6 +24,8 @@ export function useCanvasRenderer(options: UseCanvasRendererOptions = {}) {
   const data32Ref = useRef<Uint32Array | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const isDirtyRef = useRef(false);
+  const pendingDataRef = useRef<Uint8Array | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   // Initialize canvas context
   useEffect(() => {
@@ -47,6 +49,16 @@ export function useCanvasRenderer(options: UseCanvasRendererOptions = {}) {
     // Disable image smoothing for crisp pixels
     ctx.imageSmoothingEnabled = false;
 
+    // If there was pending data, render it now
+    if (pendingDataRef.current) {
+      for (let i = 0; i < TOTAL_PIXELS; i++) {
+        data32Ref.current[i] = COLOR_RGBA_LOOKUP[pendingDataRef.current[i]];
+      }
+      isDirtyRef.current = true;
+      pendingDataRef.current = null;
+    }
+
+    setIsReady(true);
     options.onReady?.();
   }, [options]);
 
@@ -71,7 +83,11 @@ export function useCanvasRenderer(options: UseCanvasRendererOptions = {}) {
 
   // Render initial state from color indices
   const renderInitialState = useCallback((colorIndices: Uint8Array) => {
-    if (!data32Ref.current) return;
+    // If canvas isn't ready yet, store data for later
+    if (!data32Ref.current) {
+      pendingDataRef.current = colorIndices;
+      return;
+    }
 
     for (let i = 0; i < TOTAL_PIXELS; i++) {
       data32Ref.current[i] = COLOR_RGBA_LOOKUP[colorIndices[i]];
@@ -105,6 +121,7 @@ export function useCanvasRenderer(options: UseCanvasRendererOptions = {}) {
 
   return {
     canvasRef,
+    isReady,
     renderInitialState,
     queuePixelUpdate,
     queueBatchUpdate,
