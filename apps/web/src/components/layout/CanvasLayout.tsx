@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { PixelCanvas } from '@/components/canvas/PixelCanvas';
 import { CoordinateDisplay } from '@/components/canvas/CoordinateDisplay';
@@ -233,13 +234,13 @@ export function CanvasLayout() {
       {/* Bottom info bar - hidden on mobile to avoid clutter */}
       <footer className="absolute bottom-2 left-2 right-2 z-10 pointer-events-none hidden md:block">
         <div className="flex items-center justify-between">
-          <a
+          <Link
             href="/gallery"
             className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors flex items-center gap-1 pointer-events-auto p-2 -m-2 min-h-[44px]"
           >
             <GalleryIcon className="w-4 h-4" />
             <span>View Gallery</span>
-          </a>
+          </Link>
 
           <div className="flex items-center gap-2 text-xs text-neutral-600 pointer-events-auto">
             <span>AI agents paint here. Humans spectate.</span>
