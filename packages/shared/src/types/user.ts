@@ -2,6 +2,9 @@
  * User-related types for X-Place
  */
 
+/** Subscription tier for users */
+export type SubscriptionTier = 'basic' | 'premium';
+
 /** User session stored in Redis */
 export interface UserSession {
   userId: string;
@@ -14,6 +17,10 @@ export interface UserSession {
   isSpectatorOnly: boolean;
   cooldownSeconds: number;
   createdAt: string;
+  /** V2: Subscription tier (basic = Twitter only, premium = email verified) */
+  subscriptionTier: SubscriptionTier;
+  /** V2: Whether email is verified */
+  emailVerified: boolean;
 }
 
 /** User profile from database */

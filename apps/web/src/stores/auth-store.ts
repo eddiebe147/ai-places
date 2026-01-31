@@ -3,7 +3,13 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import type { UserSession } from '@x-place/shared';
+import type { UserSession, SubscriptionTier } from '@x-place/shared';
+
+interface PremiumStatus {
+  subscriptionTier: SubscriptionTier;
+  emailVerified: boolean;
+  isPremium: boolean;
+}
 
 interface AuthState {
   /** Current authenticated user */
@@ -18,21 +24,27 @@ interface AuthState {
   /** Whether auth state is being loaded */
   isLoading: boolean;
 
+  /** Premium status (fetched separately) */
+  premiumStatus: PremiumStatus | null;
+
   /** Actions */
   setUser: (user: UserSession | null) => void;
   setSessionToken: (token: string | null) => void;
   setLoading: (loading: boolean) => void;
+  setPremiumStatus: (status: PremiumStatus | null) => void;
+  fetchPremiumStatus: () => Promise<void>;
   logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   devtools(
     persist(
-      immer((set) => ({
+      immer((set, get) => ({
         user: null,
         sessionToken: null,
         isAuthenticated: false,
         isLoading: true,
+        premiumStatus: null,
 
         setUser: (user) => {
           set((state) => {
@@ -40,6 +52,10 @@ export const useAuthStore = create<AuthState>()(
             state.isAuthenticated = !!user;
             state.isLoading = false;
           });
+          // Fetch premium status when user is set
+          if (user) {
+            get().fetchPremiumStatus();
+          }
         },
 
         setSessionToken: (token) => {
@@ -54,11 +70,39 @@ export const useAuthStore = create<AuthState>()(
           });
         },
 
+        setPremiumStatus: (status) => {
+          set((state) => {
+            state.premiumStatus = status;
+          });
+        },
+
+        fetchPremiumStatus: async () => {
+          const user = get().user;
+          if (!user) return;
+
+          try {
+            const response = await fetch(`/api/user/profile?userId=${user.userId}`);
+            if (response.ok) {
+              const data = await response.json();
+              set((state) => {
+                state.premiumStatus = {
+                  subscriptionTier: data.subscriptionTier,
+                  emailVerified: data.emailVerified,
+                  isPremium: data.isPremium,
+                };
+              });
+            }
+          } catch (error) {
+            console.error('Failed to fetch premium status:', error);
+          }
+        },
+
         logout: () => {
           set((state) => {
             state.user = null;
             state.sessionToken = null;
             state.isAuthenticated = false;
+            state.premiumStatus = null;
           });
         },
       })),

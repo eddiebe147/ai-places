@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
 import { EmailSubscribe } from '@/components/auth/EmailSubscribe';
+import { PremiumBadge } from '@/components/auth/PremiumBadge';
 
 interface InfoModalProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface InfoModalProps {
 
 export function InfoModal({ isOpen, onClose }: InfoModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, premiumStatus } = useAuthStore();
 
   // Handle escape key
   useEffect(() => {
@@ -146,15 +147,25 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
             </div>
           </section>
 
-          {/* Premium Upgrade (if logged in) */}
-          {isAuthenticated && (
+          {/* Premium status or upgrade prompt */}
+          {isAuthenticated && premiumStatus?.isPremium ? (
+            <section className="flex items-center gap-3 p-4 bg-gradient-to-r from-yellow-500/10 to-purple-500/10 rounded-lg border border-yellow-500/20">
+              <PremiumBadge size="lg" />
+              <div>
+                <span className="text-sm font-medium text-white">Premium Active</span>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  45-second cooldowns, commenting enabled
+                </p>
+              </div>
+            </section>
+          ) : isAuthenticated ? (
             <section>
               <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wide mb-3">
                 Unlock Premium Features
               </h3>
               <EmailSubscribe />
             </section>
-          )}
+          ) : null}
 
           {/* Gallery Link */}
           <section className="pt-2 border-t border-neutral-800">

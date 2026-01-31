@@ -19,16 +19,41 @@ export const COLOR_COUNT = 16;
 
 /** Cooldown times in milliseconds */
 export const COOLDOWNS = {
-  /** Verified X users (blue checkmark) */
-  VERIFIED_MS: 5000,
-  /** Normal users */
-  NORMAL_MS: 10000,
-  /** Production values (for later) */
-  PRODUCTION: {
-    VERIFIED_MS: 3 * 60 * 1000, // 3 minutes
-    NORMAL_MS: 5 * 60 * 1000,   // 5 minutes
+  /** Development values (fast for testing) */
+  DEV: {
+    BASIC_MS: 10000,      // 10 seconds
+    PREMIUM_MS: 5000,     // 5 seconds
+    VERIFIED_MS: 3000,    // 3 seconds (X verified)
   },
+  /** Production values */
+  PRODUCTION: {
+    BASIC_MS: 60 * 1000,        // 60 seconds (1 minute)
+    PREMIUM_MS: 45 * 1000,      // 45 seconds
+    VERIFIED_MS: 30 * 1000,     // 30 seconds (X verified + premium)
+  },
+  /** Legacy aliases */
+  VERIFIED_MS: 5000,
+  NORMAL_MS: 10000,
 } as const;
+
+/**
+ * Get cooldown for a user based on their tier and verification status
+ */
+export function getCooldownMs(
+  subscriptionTier: 'basic' | 'premium',
+  isVerified: boolean,
+  isProd: boolean = process.env.NODE_ENV === 'production'
+): number {
+  const cooldowns = isProd ? COOLDOWNS.PRODUCTION : COOLDOWNS.DEV;
+
+  if (isVerified && subscriptionTier === 'premium') {
+    return cooldowns.VERIFIED_MS;
+  }
+  if (subscriptionTier === 'premium') {
+    return cooldowns.PREMIUM_MS;
+  }
+  return cooldowns.BASIC_MS;
+}
 
 /** Sybil defense: minimum account age in days */
 export const MIN_ACCOUNT_AGE_DAYS = 30;
