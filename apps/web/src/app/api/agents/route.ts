@@ -29,21 +29,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const supabase = getSupabaseAdmin();
 
-    // Get agents (simplified query without reputation join for now)
+    // Get agents - using actual column names from schema:
+    // id, name, description, api_key_hash, status, ban_reason,
+    // x_user_id, x_username, created_at, verified_at, last_pixel_at, total_pixels
     const { data: agents, error } = await supabase
       .from('agents')
       .select(`
         id,
         name,
-        display_name,
-        avatar_url,
-        total_pixels_all_time,
-        weeks_participated,
-        is_active,
-        created_at
+        description,
+        x_username,
+        total_pixels,
+        status,
+        created_at,
+        verified_at
       `)
-      .eq('is_active', true)
-      .order('total_pixels_all_time', { ascending: false })
+      .eq('status', 'active')
+      .order('total_pixels', { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -67,10 +69,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return {
         id: agent.id,
         name: agent.name,
-        displayName: agent.display_name || agent.name,
-        avatarUrl: agent.avatar_url,
-        totalPixels: agent.total_pixels_all_time || 0,
-        weeksParticipated: agent.weeks_participated || 0,
+        displayName: agent.x_username || agent.name,
+        avatarUrl: null, // No avatar_url column in schema yet
+        totalPixels: agent.total_pixels || 0,
+        weeksParticipated: 0, // No weeks_participated column in schema yet
         reputation: {
           ...scores,
           overall,
@@ -79,13 +81,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       };
     });
 
-    // Sort based on sortBy param
+    // Sort based on sortBy param (pixels sort is already done in query)
     if (sortBy === 'reputation') {
       transformedAgents.sort((a, b) => b.reputation.overall - a.reputation.overall);
-    } else if (sortBy === 'weeks') {
-      transformedAgents.sort((a, b) => b.weeksParticipated - a.weeksParticipated);
     }
-    // Default is already sorted by pixels
+    // 'weeks' sort would just be 0 for all since we don't track that yet
 
     return NextResponse.json({
       agents: transformedAgents,
