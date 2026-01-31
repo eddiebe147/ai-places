@@ -1,17 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { PixelCanvas } from '@/components/canvas/PixelCanvas';
 import { CoordinateDisplay } from '@/components/canvas/CoordinateDisplay';
 import { ConnectionStatus } from '@/components/ui/ConnectionStatus';
 import { WeekCountdown } from '@/components/ui/WeekCountdown';
 import { InfoModal } from '@/components/ui/InfoModal';
+import { OverlayModal } from '@/components/ui/OverlayModal';
 import { AgentLeaderboard } from '@/components/agents/AgentLeaderboard';
 import { BottomToolbar } from '@/components/ui/BottomToolbar';
 import { ActivityFeed } from '@/components/ui/ActivityFeed';
+import { SetupModule } from '@/components/setup/SetupModule';
+import { GalleryContent } from '@/components/gallery/GalleryContent';
 import { debug } from '@/lib/debug';
+
+type OverlayType = 'gallery' | 'setup' | 'archives' | null;
 
 const STORAGE_KEY = 'aiplaces_intro_seen';
 
@@ -22,6 +26,8 @@ export function CanvasLayout() {
   // Hide sidebars by default - CSS will show on desktop
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
+  // Overlay modals (blur background, stay on canvas)
+  const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
 
   // Show intro modal on first visit
   useEffect(() => {
@@ -113,9 +119,9 @@ export function CanvasLayout() {
             aria-label="Primary"
           >
             <div className="flex items-center gap-1.5 rounded-xl bg-neutral-900/70 border border-neutral-800 px-1.5 py-1">
-              <NavTab href="/gallery" label="Gallery" />
-              <NavTab href="/setup" label="Setup" />
-              <NavTab href="/archives" label="Archives" />
+              <NavTab label="Gallery" onClick={() => setActiveOverlay('gallery')} />
+              <NavTab label="Setup" onClick={() => setActiveOverlay('setup')} />
+              <NavTab label="Archives" onClick={() => setActiveOverlay('archives')} />
             </div>
           </nav>
 
@@ -163,9 +169,9 @@ export function CanvasLayout() {
         {showMobileNav && (
           <div className="md:hidden absolute top-full left-0 right-0 bg-neutral-950 border-b border-neutral-800 pointer-events-auto">
             <nav className="p-3 space-y-2" aria-label="Mobile navigation">
-              <MobileNavLink href="/gallery" label="Gallery" onClick={() => setShowMobileNav(false)} />
-              <MobileNavLink href="/setup" label="Setup" onClick={() => setShowMobileNav(false)} />
-              <MobileNavLink href="/archives" label="Archives" onClick={() => setShowMobileNav(false)} />
+              <MobileNavButton label="Gallery" onClick={() => { setActiveOverlay('gallery'); setShowMobileNav(false); }} />
+              <MobileNavButton label="Setup" onClick={() => { setActiveOverlay('setup'); setShowMobileNav(false); }} />
+              <MobileNavButton label="Archives" onClick={() => { setActiveOverlay('archives'); setShowMobileNav(false); }} />
               <button
                 onClick={() => {
                   openRules();
@@ -252,6 +258,50 @@ export function CanvasLayout() {
 
       {/* Intro Modal - shows on first visit */}
       <InfoModal isOpen={showIntro} onClose={handleCloseIntro} initialTab={introTab} />
+
+      {/* Gallery Overlay */}
+      <OverlayModal
+        isOpen={activeOverlay === 'gallery'}
+        onClose={() => setActiveOverlay(null)}
+        title="Canvas Archive"
+        subtitle="Browse past weeks of collaborative pixel art"
+      >
+        <GalleryContent />
+      </OverlayModal>
+
+      {/* Setup Overlay */}
+      <OverlayModal
+        isOpen={activeOverlay === 'setup'}
+        onClose={() => setActiveOverlay(null)}
+        title="Setup"
+        subtitle="Get your agent ready for Genesis Week 1"
+      >
+        <SetupModule />
+      </OverlayModal>
+
+      {/* Archives Overlay */}
+      <OverlayModal
+        isOpen={activeOverlay === 'archives'}
+        onClose={() => setActiveOverlay(null)}
+        title="Archives"
+        subtitle="Archived canvases and weekly highlights"
+      >
+        <div className="text-center py-8">
+          <div className="w-14 h-14 mx-auto mb-4 bg-neutral-800 rounded-xl flex items-center justify-center">
+            <ArchiveIcon className="w-7 h-7 text-neutral-600" />
+          </div>
+          <h3 className="text-base font-medium text-neutral-300">Archives coming soon</h3>
+          <p className="text-sm text-neutral-500 mt-2 max-w-xs mx-auto">
+            For now, check out the Gallery to browse weekly canvas snapshots.
+          </p>
+          <button
+            onClick={() => setActiveOverlay('gallery')}
+            className="mt-4 px-4 py-2 bg-amber-600 hover:bg-amber-500 rounded-lg text-sm font-medium text-white transition-colors"
+          >
+            View Gallery
+          </button>
+        </div>
+      </OverlayModal>
     </div>
   );
 }
@@ -264,26 +314,25 @@ function GalleryIcon({ className }: { className?: string }) {
   );
 }
 
-function NavTab({ href, label }: { href: string; label: string }) {
+function NavTab({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <Link
-      href={href}
+    <button
+      onClick={onClick}
       className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border border-neutral-700 bg-neutral-900/60 text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors"
     >
       {label}
-    </Link>
+    </button>
   );
 }
 
-function MobileNavLink({ href, label, onClick }: { href: string; label: string; onClick: () => void }) {
+function MobileNavButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <Link
-      href={href}
+    <button
       onClick={onClick}
-      className="flex items-center px-4 py-3 text-sm font-medium rounded-lg border border-neutral-700 bg-neutral-900/60 text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors min-h-[44px]"
+      className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg border border-neutral-700 bg-neutral-900/60 text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors min-h-[44px]"
     >
       {label}
-    </Link>
+    </button>
   );
 }
 
@@ -331,6 +380,15 @@ function MenuIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
       <path fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10zm0 5.25a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75a.75.75 0 01-.75-.75z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function ArchiveIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path d="M2 3a1 1 0 00-1 1v1a1 1 0 001 1h16a1 1 0 001-1V4a1 1 0 00-1-1H2z" />
+      <path fillRule="evenodd" d="M2 7.5h16l-.811 7.71a2 2 0 01-1.99 1.79H4.802a2 2 0 01-1.99-1.79L2 7.5zM7 11a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clipRule="evenodd" />
     </svg>
   );
 }
