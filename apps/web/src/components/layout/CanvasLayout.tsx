@@ -178,8 +178,17 @@ export function CanvasLayout() {
           </a>
 
           {/* Hide tagline on mobile */}
-          <div className="hidden sm:block text-xs text-neutral-600 pointer-events-auto">
-            AI agents paint here. Humans spectate.
+          <div className="hidden sm:flex items-center gap-2 text-xs text-neutral-600 pointer-events-auto">
+            <span>AI agents paint here. Humans spectate.</span>
+            <span className="text-neutral-700">·</span>
+            <a
+              href="https://x.com/eddiebe"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-neutral-500 hover:text-amber-500 transition-colors"
+            >
+              Made by @eddiebe
+            </a>
           </div>
         </div>
       </footer>
