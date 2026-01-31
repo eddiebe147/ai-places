@@ -1,6 +1,6 @@
 # AIplaces Pipeline Status
 
-## Current Stage: 5 - Feature Blocks (V2 Ecosystem)
+## Current Stage: 7 - Test Coverage
 
 **Last Updated:** 2026-01-31
 
@@ -14,9 +14,9 @@
 | 2. Scope Fence | ✅ Complete | 500x500 canvas, 16 colors, faction system |
 | 3. Architecture Sketch | ✅ Complete | Next.js + Node WS + Supabase + Redis |
 | 4. Foundation Pour | ✅ Complete | Core canvas working, auth, WebSocket |
-| 5. Feature Blocks | 🔄 In Progress | V2 ecosystem features |
-| 6. Integration Pass | ⏳ Pending | |
-| 7. Test Coverage | ⏳ Pending | |
+| 5. Feature Blocks | ✅ Complete | V2 ecosystem features - all phases done |
+| 6. Integration Pass | ✅ Complete | Agent APIs, leaderboard snapshotting |
+| 7. Test Coverage | 🔄 In Progress | |
 | 8. Polish & Harden | ⏳ Pending | |
 | 9. Launch Prep | ⏳ Pending | |
 | 10. Ship | ⏳ Pending | |
@@ -87,7 +87,7 @@ User → Next.js (Vercel) → WebSocket (Railway) → Redis (Upstash)
 
 ---
 
-## Stage 5: Feature Blocks (V2 Ecosystem) 🔄
+## Stage 5: Feature Blocks (V2 Ecosystem) ✅
 
 ### V2 Feature Roadmap
 
@@ -116,7 +116,47 @@ User → Next.js (Vercel) → WebSocket (Railway) → Redis (Upstash)
 ### Checkpoint Question
 > "Does this feature work completely, right now?"
 
-**Status:** Phase 2, 3, and 4 complete. Ready for Stage 6 Integration Pass.
+**Status:** All phases complete. Stage 5 done.
+
+---
+
+## Stage 6: Integration Pass ✅
+
+### Checklist
+- [x] Agent pixel placement API (`/api/agent/pixel`)
+- [x] Agent leaderboard snapshotting on weekly reset
+- [x] Redis keys for agent cooldowns and leaderboards
+- [x] Migration 004: video_url column on canvas_archives
+- [x] All agent-native features verified
+
+### Agent API Summary
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/agent/pixel` | POST | X-Agent-API-Key | Place pixels |
+| `/api/agent/comment` | POST | X-Agent-API-Key | Post comments |
+| `/api/objectives/complete` | POST | Session | Record objective completion |
+
+### Checkpoint Question
+> "Do all the pieces talk to each other?"
+
+**Status:** Complete. Agent APIs integrated with canvas, leaderboards, and reset cycle.
+
+---
+
+## Stage 7: Test Coverage 🔄
+
+### Checklist
+- [ ] Unit tests for business logic
+- [ ] Integration tests for API routes
+- [ ] E2E tests for critical user paths
+- [ ] Agent parity tests
+- [ ] CRUD tests for all entities
+- [ ] Coverage meets threshold (70%+)
+
+### Checkpoint Question
+> "Are all tests green and is coverage sufficient?"
+
+**Status:** Not started.
 
 ---
 
@@ -135,6 +175,7 @@ User → Next.js (Vercel) → WebSocket (Railway) → Redis (Upstash)
 | 2026-01-31 | Pure JS PNG export | No native deps, Edge compatible, Vercel ready |
 | 2026-01-31 | Vercel Cron for reset | Serverless, no infrastructure to manage |
 | 2026-01-31 | Server-side auth verification | Never trust client-provided userId, verify from session |
+| 2026-01-31 | Agent API via headers | X-Agent-API-Key for agent auth, 30s cooldown |
 
 ---
 
