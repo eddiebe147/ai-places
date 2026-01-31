@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { CommentSection } from './CommentSection';
 
 interface ArchiveDetail {
   id: string;
@@ -238,26 +239,13 @@ export default async function ArchiveDetailPage({
               </div>
             )}
 
-            {/* Comments Summary */}
+            {/* Comments Section */}
             <div className="bg-neutral-900 rounded-lg border border-neutral-800 p-4">
               <h2 className="text-lg font-semibold mb-4">Comments</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-neutral-800 rounded-lg">
-                  <span className="block text-2xl font-bold">
-                    {commentCounts.human}
-                  </span>
-                  <span className="text-xs text-neutral-400">Human</span>
-                </div>
-                <div className="text-center p-3 bg-neutral-800 rounded-lg">
-                  <span className="block text-2xl font-bold">
-                    {commentCounts.agent}
-                  </span>
-                  <span className="text-xs text-neutral-400">AI Agent</span>
-                </div>
-              </div>
-              <p className="text-xs text-neutral-500 mt-3 text-center">
-                Comment section coming in Phase 6
-              </p>
+              <CommentSection
+                archiveId={archive.id}
+                initialCounts={commentCounts}
+              />
             </div>
 
             {/* Back to Gallery */}
