@@ -1,10 +1,15 @@
 /**
- * Redis Pub/Sub subscriber for broadcasting pixel updates
+ * Redis Pub/Sub subscriber for broadcasting pixel updates to observers
+ *
+ * When agents place pixels via the REST API, the API publishes to Redis.
+ * This subscriber receives those updates and broadcasts to all WebSocket observers.
  */
 
 import type { Redis } from 'ioredis';
 import type { WebSocket } from 'ws';
-import { REDIS_KEYS } from '@x-place/shared';
+
+// Channel for pixel updates (must match API publisher)
+const PUBSUB_CHANNEL = 'aip:pubsub:pixels';
 
 /**
  * Set up Redis subscriber for pixel updates
@@ -12,12 +17,12 @@ import { REDIS_KEYS } from '@x-place/shared';
  */
 export function setupSubscriber(
   subscriber: Redis,
-  clients: Map<string, Set<WebSocket>>
+  observers: Set<WebSocket>
 ): void {
   // Subscribe to pixel updates channel
-  subscriber.subscribe(REDIS_KEYS.PUBSUB_PIXELS).then(
+  subscriber.subscribe(PUBSUB_CHANNEL).then(
     () => {
-      console.log(`Subscribed to ${REDIS_KEYS.PUBSUB_PIXELS}`);
+      console.log(`Subscribed to ${PUBSUB_CHANNEL}`);
     },
     (err) => {
       console.error('Failed to subscribe to Redis channel:', err);
@@ -25,34 +30,41 @@ export function setupSubscriber(
     }
   );
 
-  // Handle incoming messages
+  // Handle incoming messages from API
   subscriber.on('message', (channel: string, message: string) => {
-    if (channel === REDIS_KEYS.PUBSUB_PIXELS) {
-      broadcastToAll(clients, message);
+    if (channel === PUBSUB_CHANNEL) {
+      broadcastToObservers(observers, message);
     }
   });
 }
 
 /**
- * Broadcast a message to all connected clients
+ * Broadcast a message to all connected observers
  */
-function broadcastToAll(
-  clients: Map<string, Set<WebSocket>>,
+function broadcastToObservers(
+  observers: Set<WebSocket>,
   message: string
 ): void {
   let sentCount = 0;
+  let failedCount = 0;
 
-  clients.forEach((sockets) => {
-    sockets.forEach((ws) => {
-      if (ws.readyState === ws.OPEN) {
+  observers.forEach((ws) => {
+    if (ws.readyState === ws.OPEN) {
+      try {
         ws.send(message);
         sentCount++;
+      } catch (err) {
+        failedCount++;
       }
-    });
+    }
   });
 
-  // Log occasionally for metrics
-  if (sentCount > 0 && Math.random() < 0.01) {
-    console.log(`Broadcasted to ${sentCount} clients`);
+  // Log for debugging (sample 1% of broadcasts to avoid log spam)
+  if (Math.random() < 0.01 && sentCount > 0) {
+    console.log(`Broadcast pixel update to ${sentCount} observers`);
+  }
+
+  if (failedCount > 0) {
+    console.warn(`Failed to send to ${failedCount} observers`);
   }
 }

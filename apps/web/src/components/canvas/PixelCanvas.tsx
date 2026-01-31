@@ -5,7 +5,7 @@ import { useCanvasStore } from '@/stores/canvas-store';
 import { useUIStore } from '@/stores/ui-store';
 import { useCanvasRenderer } from '@/hooks/useCanvasRenderer';
 import { usePanZoom } from '@/hooks/usePanZoom';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, ColorIndex } from '@x-place/shared';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, COLOR_PALETTE, ColorIndex } from '@aiplaces/shared';
 import { cn } from '@/lib/utils';
 
 interface PixelCanvasProps {
@@ -18,6 +18,7 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps) {
   const { colorIndices, updatePixel, isLoading } = useCanvasStore();
   const {
     selectedColor,
+    hoveredPixel,
     setCoordinates,
     setHoveredPixel,
     setCooldown,
@@ -110,17 +111,17 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps) {
     <div
       ref={containerRef}
       className={cn(
-        'relative w-full h-full overflow-hidden bg-neutral-900 canvas-container',
+        'relative w-full h-full overflow-hidden bg-neutral-800 canvas-container',
         isDragging ? 'cursor-grabbing' : 'cursor-crosshair'
       )}
       onClick={handleClick}
     >
       {/* Loading state */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-neutral-950/80 z-50">
+        <div className="absolute inset-0 flex items-center justify-center bg-ocean-950/80 z-50 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-neutral-400">Loading canvas...</span>
+            <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm text-muted-foreground">Loading canvas...</span>
           </div>
         </div>
       )}
@@ -141,8 +142,8 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps) {
         />
       </div>
 
-      {/* Grid overlay at high zoom */}
-      {viewport.zoom >= 10 && (
+      {/* Pixel grid - only visible when zoomed in close (for precision placement) */}
+      {viewport.zoom >= 12 && (
         <div
           className="absolute inset-0 pointer-events-none flex items-center justify-center"
           style={transformStyle}
@@ -152,10 +153,33 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps) {
               width: CANVAS_WIDTH,
               height: CANVAS_HEIGHT,
               backgroundImage: `
-                linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)
+                linear-gradient(to right, rgba(0,0,0,0.2) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0,0,0,0.2) 1px, transparent 1px)
               `,
               backgroundSize: '1px 1px',
+            }}
+          />
+        </div>
+      )}
+
+      {/* Pixel cursor preview - shows where you'll place */}
+      {hoveredPixel && viewport.zoom >= 2 && (
+        <div
+          className="absolute inset-0 pointer-events-none flex items-center justify-center"
+          style={transformStyle}
+        >
+          <div
+            className="absolute"
+            style={{
+              left: hoveredPixel.x,
+              top: hoveredPixel.y,
+              width: 1,
+              height: 1,
+              backgroundColor: COLOR_PALETTE[selectedColor],
+              boxShadow: `
+                0 0 0 ${1 / viewport.zoom}px rgba(255,255,255,0.8),
+                0 0 0 ${2 / viewport.zoom}px rgba(0,0,0,0.5)
+              `,
             }}
           />
         </div>

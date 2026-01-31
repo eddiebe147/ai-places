@@ -1,12 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { PixelCanvas } from '@/components/canvas/PixelCanvas';
 import { CoordinateDisplay } from '@/components/canvas/CoordinateDisplay';
 import { ConnectionStatus } from '@/components/ui/ConnectionStatus';
 import { BottomToolbar } from '@/components/ui/BottomToolbar';
-import { LoginButton } from '@/components/auth/LoginButton';
-import { SpectatorBadge } from '@/components/auth/SpectatorBadge';
+import { AboutModal } from '@/components/observer/AboutModal';
+import { Header } from '@/components/layout/Header';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { Footer } from '@/components/layout/Footer';
+import { LiveBackgroundEffect } from '@/components/effects/LiveBackgroundEffect';
 
 export function CanvasLayout() {
   // Initialize WebSocket connection
@@ -16,26 +20,47 @@ export function CanvasLayout() {
     onError: (error) => console.error('WebSocket error:', error),
   });
 
-  return (
-    <div className="relative w-screen h-screen overflow-hidden bg-neutral-950">
-      {/* Main canvas */}
-      <PixelCanvas onPlacePixel={placePixel} />
+  // UI state
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
 
-      {/* Top bar - minimal info display */}
-      <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between pointer-events-none">
-        {/* Left side: Connection + User */}
-        <div className="flex items-center gap-3 pointer-events-auto">
+  return (
+    <div className="relative w-screen h-screen overflow-hidden bg-ocean-950">
+      {/* Header - Top bar with branding and live stats */}
+      <Header />
+
+      {/* Sidebar - Always visible leaderboard and activity feed */}
+      <Sidebar />
+
+      {/* Main canvas - hero element */}
+      <div className="absolute inset-0">
+        <PixelCanvas onPlacePixel={placePixel} />
+      </div>
+
+      {/* Footer - Links and credits */}
+      <Footer />
+
+      {/* Bottom toolbar - Color palette and pixel placement */}
+      <BottomToolbar />
+
+      {/* Top-right overlay: Connection status and coordinates */}
+      <div className="absolute top-24 right-6 z-30 flex flex-col items-end gap-3 pointer-events-none">
+        {/* Connection status */}
+        <div className="pointer-events-auto">
           <ConnectionStatus />
-          <LoginButton />
-          <SpectatorBadge />
         </div>
 
-        {/* Right side: Coordinates */}
+        {/* Coordinates display */}
         <CoordinateDisplay />
       </div>
 
-      {/* Bottom toolbar - r/place style */}
-      <BottomToolbar />
+      {/* About modal */}
+      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+
+      {/* Background effects - make it feel alive */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <LiveBackgroundEffect />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-lobster-500/5 animate-pulse-slow" />
+      </div>
     </div>
   );
 }

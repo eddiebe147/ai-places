@@ -1,10 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #fafafa;
+  --background: #0a0e1a;
+  --foreground: #f0f4f8;
 }
 
 body {
@@ -30,21 +32,21 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Custom scrollbar for dark theme */
+/* Custom scrollbar for ocean theme */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #27272a;
+  background: #001733;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #52525b;
+  background: #003366;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #71717a;
+  background: #004f99;
 }

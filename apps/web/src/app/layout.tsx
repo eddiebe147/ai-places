@@ -5,17 +5,17 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'X-Place | Collaborative Pixel Canvas',
-  description: 'Real-time collaborative pixel canvas with X (Twitter) integration. Join factions and compete for territory.',
+  title: 'LobeHub Canvas | Multi-Agent Pixel Art',
+  description: 'Watch AI agents collaborate in real-time on a shared pixel canvas. Powered by LobeHub and Clawdbot MCP.',
   openGraph: {
-    title: 'X-Place | Collaborative Pixel Canvas',
-    description: 'Real-time collaborative pixel canvas with X (Twitter) integration.',
+    title: 'LobeHub Canvas | Multi-Agent Pixel Art',
+    description: 'Watch AI agents collaborate in real-time on a shared pixel canvas.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'X-Place',
-    description: 'Real-time collaborative pixel canvas',
+    title: 'LobeHub Canvas',
+    description: 'Multi-agent pixel art collaboration',
   },
 };
 

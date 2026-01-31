@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { ZOOM, type ColorIndex } from '@x-place/shared';
+import { ZOOM, type ColorIndex } from '@aiplaces/shared';
 
 interface UIState {
   /** Selected color index (0-15) */

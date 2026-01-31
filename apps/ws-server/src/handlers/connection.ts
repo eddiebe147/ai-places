@@ -1,36 +1,26 @@
 /**
- * WebSocket connection handler
+ * WebSocket connection handler - Observer Mode
+ *
+ * This server is for human observers watching the canvas in real-time.
+ * Agents use the REST API to place pixels - this server only broadcasts updates.
  */
 
 import type { WebSocket } from 'ws';
 import type { IncomingMessage } from 'http';
 import type { Redis } from 'ioredis';
-import { config } from '../config/index.js';
 import { CanvasService } from '../services/redis.js';
-import { handlePlacePixel } from './pixel.js';
-import { REDIS_KEYS } from '@x-place/shared';
 import type {
   ClientMessage,
-  AuthenticatedMessage,
-  AuthErrorMessage,
   CanvasStateMessage,
   PongMessage,
   ServerMessage,
-} from '@x-place/shared';
-
-export interface UserSession {
-  userId: string;
-  xUsername: string;
-  factionId: string | null;
-  isVerified: boolean;
-  isSpectatorOnly: boolean;
-  cooldownSeconds: number;
-}
+  ConnectionCountMessage,
+} from '@aiplaces/shared';
 
 export interface ConnectionContext {
   redis: Redis;
   publisher: Redis;
-  clients: Map<string, Set<WebSocket>>;
+  observers: Set<WebSocket>;
 }
 
 /**
@@ -43,77 +33,52 @@ export function send(ws: WebSocket, message: ServerMessage): void {
 }
 
 /**
- * Handle a new WebSocket connection
+ * Broadcast observer count to all clients
+ */
+function broadcastObserverCount(observers: Set<WebSocket>): void {
+  const count = observers.size;
+  const message: ConnectionCountMessage = {
+    type: 'connection_count',
+    payload: { count },
+  };
+  const messageStr = JSON.stringify(message);
+
+  observers.forEach((ws) => {
+    if (ws.readyState === ws.OPEN) {
+      ws.send(messageStr);
+    }
+  });
+}
+
+/**
+ * Handle a new WebSocket connection (observer mode)
+ *
+ * Observers can:
+ * - Receive real-time pixel updates
+ * - Request full canvas state
+ * - Ping/pong for connection health
+ *
+ * Observers cannot:
+ * - Place pixels (use REST API)
+ * - Authenticate (no login needed)
  */
 export async function handleConnection(
   ws: WebSocket,
   req: IncomingMessage,
   ctx: ConnectionContext
 ): Promise<void> {
-  let authenticatedUser: UserSession | null = null;
+  // Add to observers set
+  ctx.observers.add(ws);
+  console.log(`Observer connected. Total: ${ctx.observers.size}`);
 
-  console.log('New WebSocket connection established');
+  // Broadcast updated observer count
+  broadcastObserverCount(ctx.observers);
 
-  // IMPORTANT: Register message handler FIRST before any async operations
-  // This prevents race conditions where client sends messages before handler is ready
+  // Handle incoming messages
   ws.on('message', async (data) => {
     try {
       const message: ClientMessage = JSON.parse(data.toString());
 
-      // Handle authentication
-      if (message.type === 'authenticate') {
-        const token = message.payload.token;
-        const redisKey = REDIS_KEYS.SESSION(token);
-          const session = await ctx.redis.get(redisKey);
-  
-        if (!session) {
-          send(ws, {
-            type: 'auth_error',
-            payload: { message: 'Invalid or expired session' },
-          } as AuthErrorMessage);
-          ws.close(4002, 'Invalid session');
-          return;
-        }
-
-        authenticatedUser = JSON.parse(session) as UserSession;
-
-        // Add to clients map
-        if (!ctx.clients.has(authenticatedUser.userId)) {
-          ctx.clients.set(authenticatedUser.userId, new Set());
-        }
-        ctx.clients.get(authenticatedUser.userId)!.add(ws);
-
-        // Send authentication success
-        send(ws, {
-          type: 'authenticated',
-          payload: {
-            userId: authenticatedUser.userId,
-            username: authenticatedUser.xUsername,
-            factionId: authenticatedUser.factionId,
-            cooldownSeconds: authenticatedUser.cooldownSeconds,
-            isSpectatorOnly: authenticatedUser.isSpectatorOnly,
-          },
-        } as AuthenticatedMessage);
-
-        // Send initial canvas state
-        const canvasService = new CanvasService(ctx.redis);
-        const canvasData = await canvasService.getFullCanvas();
-
-        send(ws, {
-          type: 'canvas_state',
-          payload: {
-            format: 'full',
-            data: canvasData,
-            version: 0,
-            timestamp: Date.now(),
-          },
-        } as CanvasStateMessage);
-
-        console.log(`User ${authenticatedUser.xUsername} connected`);
-        return;
-      }
-
-      // Route messages - some allowed without auth
       switch (message.type) {
         case 'ping':
           send(ws, {
@@ -137,32 +102,17 @@ export async function handleConnection(
           break;
         }
 
+        // Legacy message types - inform client they're not available
+        case 'authenticate':
         case 'place_pixel':
-          // Require authentication for placing pixels
-          if (!authenticatedUser) {
-            send(ws, {
-              type: 'pixel_error',
-              payload: {
-                code: 'NOT_AUTHENTICATED',
-                message: 'You must be logged in to place pixels',
-              },
-            });
-            return;
-          }
-          await handlePlacePixel(ws, message, authenticatedUser, ctx);
-          break;
-
         case 'join_faction':
-          // Require authentication for joining factions
-          if (!authenticatedUser) {
-            send(ws, {
-              type: 'auth_error',
-              payload: { message: 'Not authenticated' },
-            } as AuthErrorMessage);
-            return;
-          }
-          // TODO: Handle faction joining
-          console.log('Faction join requested:', message.payload.factionId);
+          send(ws, {
+            type: 'error',
+            payload: {
+              code: 'OBSERVER_MODE',
+              message: 'This is an observer-only connection. Agents use the REST API to place pixels.',
+            },
+          } as any);
           break;
 
         default:
@@ -174,25 +124,18 @@ export async function handleConnection(
   });
 
   ws.on('close', () => {
-    console.log('WebSocket connection closed');
+    ctx.observers.delete(ws);
+    console.log(`Observer disconnected. Total: ${ctx.observers.size}`);
 
-    if (authenticatedUser) {
-      const userSockets = ctx.clients.get(authenticatedUser.userId);
-      if (userSockets) {
-        userSockets.delete(ws);
-        if (userSockets.size === 0) {
-          ctx.clients.delete(authenticatedUser.userId);
-        }
-      }
-      console.log(`User ${authenticatedUser.xUsername} disconnected`);
-    }
+    // Broadcast updated observer count
+    broadcastObserverCount(ctx.observers);
   });
 
   ws.on('error', (err) => {
     console.error('WebSocket error:', err);
   });
 
-  // Send initial canvas state (after handlers are registered)
+  // Send initial canvas state
   try {
     const canvasService = new CanvasService(ctx.redis);
     const canvasData = await canvasService.getFullCanvas();
@@ -205,7 +148,7 @@ export async function handleConnection(
         timestamp: Date.now(),
       },
     } as CanvasStateMessage);
-    console.log('Sent initial canvas state');
+    console.log('Sent initial canvas state to observer');
   } catch (err) {
     console.error('Failed to send initial canvas state:', err);
   }

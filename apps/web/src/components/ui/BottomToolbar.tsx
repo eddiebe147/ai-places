@@ -1,143 +1,73 @@
 'use client';
 
 import { useUIStore } from '@/stores/ui-store';
-import { useAuthStore } from '@/stores/auth-store';
-import { COLOR_PALETTE, COLOR_NAMES } from '@x-place/shared';
-import type { ColorIndex } from '@x-place/shared';
-import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
+import { COLOR_PALETTE, COLOR_NAMES } from '@aiplaces/shared';
+import type { ColorIndex } from '@aiplaces/shared';
 
+/**
+ * Observer toolbar - shows color palette legend and canvas info
+ * Observers watch agents place pixels, they don't place themselves
+ */
 export function BottomToolbar() {
-  const { selectedColor, setSelectedColor, cooldownEnd } = useUIStore();
-  const { isAuthenticated, user } = useAuthStore();
-  const isSpectator = user?.isSpectatorOnly ?? false;
-
-  const [cooldownRemaining, setCooldownRemaining] = useState(0);
-
-  // Cooldown countdown
-  useEffect(() => {
-    if (!cooldownEnd) {
-      setCooldownRemaining(0);
-      return;
-    }
-
-    const updateCooldown = () => {
-      const remaining = Math.max(0, cooldownEnd - Date.now());
-      setCooldownRemaining(remaining);
-    };
-
-    updateCooldown();
-    const interval = setInterval(updateCooldown, 100);
-    return () => clearInterval(interval);
-  }, [cooldownEnd]);
+  const { currentX, currentY, zoom } = useUIStore();
 
   const colorEntries = Object.entries(COLOR_PALETTE) as [string, string][];
-  const isOnCooldown = cooldownRemaining > 0;
-  const cooldownSeconds = Math.ceil(cooldownRemaining / 1000);
-  const cooldownProgress = cooldownEnd
-    ? Math.min(100, ((5000 - cooldownRemaining) / 5000) * 100)
-    : 100;
-
-  // Can place pixel: authenticated, not spectator, not on cooldown
-  const canPlace = isAuthenticated && !isSpectator && !isOnCooldown;
-
-  // Calculate dasharray for progress circle
-  const dasharray = `${cooldownProgress * 0.88} 88`;
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
-      <div className="bg-neutral-900/95 backdrop-blur-md rounded-2xl border border-neutral-800 shadow-2xl">
-        {/* Color Palette - 2 rows of 8 */}
-        <div className="px-4 pt-4 pb-3">
-          <div className="grid grid-cols-8 gap-1.5">
-            {colorEntries.map(([index, hex]) => {
-              const colorIndex = parseInt(index) as ColorIndex;
-              const isSelected = selectedColor === colorIndex;
-
-              return (
-                <button
-                  key={index}
-                  onClick={() => setSelectedColor(colorIndex)}
-                  className={cn(
-                    'w-8 h-8 rounded-lg transition-all duration-150',
-                    'hover:scale-110 hover:z-10',
-                    'focus:outline-none focus:ring-2 focus:ring-white/30',
-                    isSelected && 'ring-2 ring-white scale-110 z-10 shadow-lg'
-                  )}
-                  style={{ backgroundColor: hex }}
-                  title={COLOR_NAMES[colorIndex]}
-                />
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="h-px bg-neutral-800 mx-4" />
-
-        {/* Bottom row: Status + Action */}
-        <div className="px-4 py-3 flex items-center justify-between gap-4">
-          {/* Selected color preview */}
+    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+      <div className="bg-neutral-900/95 backdrop-blur-md rounded-xl border border-neutral-700 shadow-2xl px-4 py-3">
+        <div className="flex items-center gap-6">
+          {/* Color palette legend */}
           <div className="flex items-center gap-2">
-            <div
-              className="w-6 h-6 rounded-md ring-1 ring-white/20"
-              style={{ backgroundColor: COLOR_PALETTE[selectedColor] }}
-            />
-            <span className="text-sm text-neutral-400">
-              {COLOR_NAMES[selectedColor]}
+            <span className="text-xs text-neutral-500 mr-1">Palette:</span>
+            <div className="flex gap-0.5">
+              {colorEntries.map(([index, hex]) => {
+                const colorIndex = parseInt(index) as ColorIndex;
+                return (
+                  <div
+                    key={index}
+                    className="w-5 h-5 rounded-sm first:rounded-l last:rounded-r"
+                    style={{ backgroundColor: hex }}
+                    title={`${colorIndex}: ${COLOR_NAMES[colorIndex]}`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-neutral-700" />
+
+          {/* Coordinates */}
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            </svg>
+            <span className="font-mono text-sm text-neutral-300">
+              {currentX}, {currentY}
             </span>
           </div>
 
-          {/* Action area */}
-          <div className="flex items-center gap-3">
-            {/* Cooldown indicator */}
-            {isOnCooldown && (
-              <div className="flex items-center gap-2">
-                <div className="relative w-8 h-8">
-                  {/* Background circle */}
-                  <svg className="w-8 h-8 -rotate-90" viewBox="0 0 32 32">
-                    <circle
-                      cx="16"
-                      cy="16"
-                      r="14"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      className="text-neutral-700"
-                    />
-                    <circle
-                      cx="16"
-                      cy="16"
-                      r="14"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeDasharray={dasharray}
-                      className="text-sky-500 transition-all duration-100"
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-medium">
-                    {cooldownSeconds}
-                  </span>
-                </div>
-              </div>
-            )}
+          {/* Divider */}
+          <div className="w-px h-6 bg-neutral-700" />
 
-            {/* Place button or status */}
-            {!isAuthenticated ? (
-              <span className="text-sm text-neutral-500">Login to place pixels</span>
-            ) : isSpectator ? (
-              <span className="text-sm text-amber-500">Spectator mode</span>
-            ) : (
-              <div className={cn(
-                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                canPlace
-                  ? 'bg-sky-600 text-white'
-                  : 'bg-neutral-800 text-neutral-500'
-              )}>
-                {isOnCooldown ? 'Wait...' : 'Click canvas to place'}
-              </div>
-            )}
+          {/* Zoom level */}
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+            </svg>
+            <span className="font-mono text-sm text-neutral-300">
+              {Math.round(zoom * 100)}%
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-neutral-700" />
+
+          {/* Live indicator */}
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-sm text-green-400">Live</span>
           </div>
         </div>
       </div>

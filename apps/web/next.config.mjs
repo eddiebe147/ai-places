@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
 
-  // Note: @x-place/shared is pre-compiled to ESM in dist/
+  // Note: @aiplaces/shared is pre-compiled to ESM in dist/
   // No transpilePackages needed - resolves from node_modules
 
   // Image optimization

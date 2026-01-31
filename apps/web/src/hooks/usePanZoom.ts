@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, ZOOM } from '@x-place/shared';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, ZOOM } from '@aiplaces/shared';
 
 interface ViewportState {
   x: number;
@@ -185,13 +185,34 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     []
   );
 
-  // Toggle zoom level
+  // Toggle zoom level (between overview and drawing zoom)
   const toggleZoom = useCallback(() => {
     setViewport((prev) => ({
       ...prev,
       targetZoom: prev.targetZoom < ZOOM.DRAW ? ZOOM.DRAW : ZOOM.DEFAULT,
     }));
   }, []);
+
+  // Fit canvas to container on mount
+  const fitToContainer = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const padding = 40; // pixels of padding around canvas
+    const scaleX = (rect.width - padding) / CANVAS_WIDTH;
+    const scaleY = (rect.height - padding) / CANVAS_HEIGHT;
+    const fitZoom = Math.min(scaleX, scaleY, ZOOM.MAX);
+
+    setViewport({
+      x: 0,
+      y: 0,
+      zoom: Math.max(fitZoom, ZOOM.MIN),
+      targetX: 0,
+      targetY: 0,
+      targetZoom: Math.max(fitZoom, ZOOM.MIN),
+    });
+  }, [containerRef]);
 
   // Get canvas coordinates from screen position
   const getCanvasCoords = useCallback(
@@ -229,10 +250,47 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     };
   }, [containerRef, handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
 
+  // Fit canvas to container on mount and resize
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Initial fit
+    const initialFit = () => {
+      const rect = container.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        const padding = 60;
+        const scaleX = (rect.width - padding) / CANVAS_WIDTH;
+        const scaleY = (rect.height - padding) / CANVAS_HEIGHT;
+        const fitZoom = Math.min(scaleX, scaleY, ZOOM.MAX);
+        const clampedZoom = Math.max(fitZoom, ZOOM.MIN);
+
+        setViewport({
+          x: 0,
+          y: 0,
+          zoom: clampedZoom,
+          targetX: 0,
+          targetY: 0,
+          targetZoom: clampedZoom,
+        });
+      }
+    };
+
+    // Delay to ensure container is measured
+    requestAnimationFrame(initialFit);
+
+    // Handle resize
+    const resizeObserver = new ResizeObserver(initialFit);
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, [containerRef]);
+
   return {
     viewport,
     centerOn,
     toggleZoom,
+    fitToContainer,
     getCanvasCoords,
     isDragging: isDraggingRef.current,
   };

@@ -5,8 +5,8 @@ import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
   COLOR_RGBA_LOOKUP,
-} from '@x-place/shared';
-import type { PixelUpdate } from '@x-place/shared';
+} from '@aiplaces/shared';
+import type { PixelUpdate } from '@aiplaces/shared';
 
 const TOTAL_PIXELS = CANVAS_WIDTH * CANVAS_HEIGHT;
 
@@ -44,6 +44,13 @@ export function useCanvasRenderer(options: UseCanvasRendererOptions = {}) {
     imageDataRef.current = ctx.createImageData(CANVAS_WIDTH, CANVAS_HEIGHT);
     data32Ref.current = new Uint32Array(imageDataRef.current.data.buffer);
 
+    // Fill with white (color index 0) initially
+    const whiteRGBA = COLOR_RGBA_LOOKUP[0]; // White in ABGR format
+    for (let i = 0; i < TOTAL_PIXELS; i++) {
+      data32Ref.current[i] = whiteRGBA;
+    }
+    ctx.putImageData(imageDataRef.current, 0, 0);
+
     // Disable image smoothing for crisp pixels
     ctx.imageSmoothingEnabled = false;
 
@@ -70,11 +77,13 @@ export function useCanvasRenderer(options: UseCanvasRendererOptions = {}) {
   }, []);
 
   // Render initial state from color indices
-  const renderInitialState = useCallback((colorIndices: Uint8Array) => {
+  const renderInitialState = useCallback((colorIndices: Uint8Array | ArrayLike<number>) => {
     if (!data32Ref.current) return;
 
+    // Handle both Uint8Array and Immer proxied arrays
     for (let i = 0; i < TOTAL_PIXELS; i++) {
-      data32Ref.current[i] = COLOR_RGBA_LOOKUP[colorIndices[i]];
+      const colorIndex = colorIndices[i] ?? 0;
+      data32Ref.current[i] = COLOR_RGBA_LOOKUP[colorIndex] ?? COLOR_RGBA_LOOKUP[0];
     }
     isDirtyRef.current = true;
   }, []);

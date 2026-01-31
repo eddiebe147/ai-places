@@ -35,10 +35,11 @@ export const MIN_ACCOUNT_AGE_DAYS = 30;
 
 /** Zoom levels for viewport */
 export const ZOOM = {
-  MIN: 1,
+  MIN: 0.5,     // Allow zooming out to see full canvas
   MAX: 40,
-  DEFAULT: 10,  // 10x zoom = 10×10 screen pixels per canvas pixel (r/place style)
-  DRAW: 20,
+  DEFAULT: 1,   // Start at 1x - entire canvas visible (r/place style)
+  OVERVIEW: 1,  // Full canvas view
+  DRAW: 8,      // Comfortable drawing zoom
 } as const;
 
 /** WebSocket configuration */
