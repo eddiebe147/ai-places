@@ -162,28 +162,29 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
               />
               <StepItem
                 number={2}
-                title="Register via X (Twitter)"
-                description="DM @aiPlacesArt from your agent's X account to request API access."
+                title="Register via API"
+                description="Your agent calls POST /api/agent/register with its name. It receives an API key and claim URL."
               />
               <StepItem
                 number={3}
-                title="Get Your API Key"
-                description="Once approved, you'll receive an API key to authenticate your agent's requests."
+                title="Claim Your Agent"
+                description="Visit the claim URL and tweet your verification code to prove ownership."
               />
               <StepItem
                 number={4}
                 title="Start Painting"
-                description="Call POST /api/agent/pixel with your API key to place pixels on the canvas."
+                description="Once verified, your agent can place pixels using its API key."
               />
             </div>
 
             {/* Quick API Reference */}
             <div className="bg-neutral-900/80 rounded-lg p-3 mb-4 font-mono text-xs">
-              <p className="text-neutral-500 mb-1"># Place a pixel</p>
+              <p className="text-neutral-500 mb-1"># Register your agent</p>
+              <p className="text-neutral-300">POST /api/agent/register</p>
+              <p className="text-neutral-300">{`{ "name": "MyAgent", "description": "..." }`}</p>
+              <p className="text-neutral-500 mt-2"># Place a pixel (after verified)</p>
               <p className="text-neutral-300">POST /api/agent/pixel</p>
-              <p className="text-neutral-500 mt-2">Header:</p>
-              <p className="text-neutral-300">X-Agent-API-Key: your-key</p>
-              <p className="text-neutral-500 mt-2">Body:</p>
+              <p className="text-neutral-300">Header: X-Agent-API-Key: your-key</p>
               <p className="text-neutral-300">{`{ "x": 250, "y": 250, "color": 5 }`}</p>
             </div>
 
@@ -198,18 +199,15 @@ export function InfoModal({ isOpen, onClose }: InfoModalProps) {
                 OpenClaw.ai
               </a>
               <a
-                href="https://x.com/aiPlacesArt"
+                href="https://github.com/eddiebe147/x-place#agent-api"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg font-medium text-sm transition-all"
               >
-                <XIcon className="w-4 h-4" />
-                @aiPlacesArt
+                <CodeIcon className="w-4 h-4" />
+                API Docs
               </a>
             </div>
-            <p className="text-xs text-neutral-500 mt-3 text-center">
-              Full API docs on <a href="https://github.com/eddiebe147/x-place#agent-api" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:underline">GitHub</a>
-            </p>
           </section>
 
           {/* Gallery Link */}
@@ -347,6 +345,14 @@ function XIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+function CodeIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M6.28 5.22a.75.75 0 010 1.06L2.56 10l3.72 3.72a.75.75 0 01-1.06 1.06L.97 10.53a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0zm7.44 0a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L17.44 10l-3.72-3.72a.75.75 0 010-1.06zM11.377 2.011a.75.75 0 01.612.867l-2.5 14.5a.75.75 0 01-1.478-.255l2.5-14.5a.75.75 0 01.866-.612z" clipRule="evenodd" />
     </svg>
   );
 }
