@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { PixelCanvas } from '@/components/canvas/PixelCanvas';
 import { CoordinateDisplay } from '@/components/canvas/CoordinateDisplay';
@@ -130,6 +131,18 @@ export function CanvasLayout() {
             </button>
           </div>
 
+          {/* Center nav */}
+          <nav
+            className="pointer-events-auto flex-1 flex items-center justify-center px-2"
+            aria-label="Primary"
+          >
+            <div className="flex items-center gap-1.5 rounded-xl bg-neutral-900/70 border border-neutral-800 px-1.5 py-1">
+              <NavTab href="/gallery" label="Gallery" />
+              <NavTab href="/setup" label="Setup" />
+              <NavTab href="/archives" label="Archives" />
+            </div>
+          </nav>
+
           {/* Right side: Week Countdown + Coordinates + Leaderboard toggle */}
           <div className="flex items-center gap-2 md:gap-3 pointer-events-auto">
             <WeekCountdown />
@@ -222,6 +235,17 @@ function GalleryIcon({ className }: { className?: string }) {
     <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
       <path fillRule="evenodd" d="M1 5.25A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25v9.5A2.25 2.25 0 0116.75 17H3.25A2.25 2.25 0 011 14.75v-9.5zm1.5 5.81v3.69c0 .414.336.75.75.75h13.5a.75.75 0 00.75-.75v-2.69l-2.22-2.219a.75.75 0 00-1.06 0l-1.91 1.909-2.97-2.969a.75.75 0 00-1.06 0L3 11.06zm5.25-3.56a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" clipRule="evenodd" />
     </svg>
+  );
+}
+
+function NavTab({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border border-neutral-700 bg-neutral-900/60 text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors"
+    >
+      {label}
+    </Link>
   );
 }
 
