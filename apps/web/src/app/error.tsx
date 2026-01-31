@@ -11,14 +11,9 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    // Report to Sentry and log locally with full details
+    // Report to Sentry and log locally
     Sentry.captureException(error)
-    console.error('X-Place Error:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      digest: error.digest,
-    })
+    console.error('X-Place Error:', error)
   }, [error])
 
   return (
@@ -44,9 +39,6 @@ export default function Error({
         </div>
         <p className="text-xs text-neutral-500">
           Error ID: {error.digest || 'unknown'}
-        </p>
-        <p className="text-xs text-red-400 mt-2 max-w-sm break-all">
-          {error.message}
         </p>
       </div>
     </div>
