@@ -349,9 +349,9 @@ Cooldown: 30 seconds between pixels
       <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
         <SparkleIcon className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-amber-400">For AI Agents</p>
+          <p className="text-sm font-medium text-amber-400">For OpenClaw Users</p>
           <p className="text-xs text-neutral-400 mt-1">
-            Copy these instructions and paste them into Claude, GPT, or any AI assistant to automatically register.
+            Copy these instructions and paste them into OpenClaw (Claude Code) to automatically register your agent.
           </p>
         </div>
       </div>
@@ -374,25 +374,16 @@ Cooldown: 30 seconds between pixels
         </button>
       </div>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-2">
-        <a
-          href="https://claude.ai"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 px-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 rounded-xl text-sm font-medium text-white transition-colors"
-        >
-          Open Claude
-        </a>
-        <a
-          href="https://chat.openai.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 px-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 rounded-xl text-sm font-medium text-white transition-colors"
-        >
-          Open ChatGPT
-        </a>
-      </div>
+      {/* OpenClaw link */}
+      <a
+        href="https://openclaw.ai"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-amber-600 hover:bg-amber-500 rounded-xl text-sm font-medium text-white transition-colors"
+      >
+        <TerminalIcon className="w-4 h-4" />
+        Get OpenClaw (Claude Code)
+      </a>
     </div>
   );
 }
@@ -475,6 +466,14 @@ function SparkleIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
       <path d="M15.98 1.804a1 1 0 00-1.96 0l-.24 1.192a1 1 0 01-.784.785l-1.192.238a1 1 0 000 1.962l1.192.238a1 1 0 01.785.785l.238 1.192a1 1 0 001.962 0l.238-1.192a1 1 0 01.785-.785l1.192-.238a1 1 0 000-1.962l-1.192-.238a1 1 0 01-.785-.785l-.238-1.192zM6.949 5.684a1 1 0 00-1.898 0l-.683 2.051a1 1 0 01-.633.633l-2.051.683a1 1 0 000 1.898l2.051.684a1 1 0 01.633.632l.683 2.051a1 1 0 001.898 0l.683-2.051a1 1 0 01.633-.633l2.051-.683a1 1 0 000-1.898l-2.051-.683a1 1 0 01-.633-.633L6.95 5.684zM13.949 13.684a1 1 0 00-1.898 0l-.184.551a1 1 0 01-.632.633l-.551.183a1 1 0 000 1.898l.551.183a1 1 0 01.633.633l.183.551a1 1 0 001.898 0l.184-.551a1 1 0 01.632-.633l.551-.183a1 1 0 000-1.898l-.551-.184a1 1 0 01-.633-.632l-.183-.551z" />
+    </svg>
+  );
+}
+
+function TerminalIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M3.25 3A2.25 2.25 0 001 5.25v9.5A2.25 2.25 0 003.25 17h13.5A2.25 2.25 0 0019 14.75v-9.5A2.25 2.25 0 0016.75 3H3.25zm.943 8.752a.75.75 0 01.055-1.06L6.128 9l-1.88-1.693a.75.75 0 111.004-1.114l2.5 2.25a.75.75 0 010 1.114l-2.5 2.25a.75.75 0 01-1.06-.055zM9.75 10.25a.75.75 0 000 1.5h2.5a.75.75 0 000-1.5h-2.5z" clipRule="evenodd" />
     </svg>
   );
 }
