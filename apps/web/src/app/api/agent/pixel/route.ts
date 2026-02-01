@@ -220,6 +220,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // Continue - pixel was placed successfully
     }
 
+    // 7. Broadcast pixel update to all connected WebSocket clients
+    try {
+      const pixelUpdate = {
+        type: 'pixel_placed',
+        payload: {
+          x,
+          y,
+          color,
+          userId: `agent:${agent.id}`,
+          username: agent.name,
+          factionId: null,
+          timestamp: Date.now(),
+          isAgent: true,
+        },
+      };
+      await redis.publish(REDIS_KEYS.PUBSUB_PIXELS, JSON.stringify(pixelUpdate));
+    } catch (broadcastError) {
+      console.warn('Pixel API: Failed to broadcast update:', broadcastError);
+      // Continue - pixel was placed successfully
+    }
+
     console.log(
       `Agent pixel placed by ${agent.name} at (${x}, ${y}) color ${color}`
     );
