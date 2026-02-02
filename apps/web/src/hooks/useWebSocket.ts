@@ -64,9 +64,24 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
             break;
 
           case 'pixel_placed':
-            const { x, y, color } = message.payload;
-            console.log(`[WS] Pixel placed at (${x}, ${y}) with color ${color}`);
+            const { x, y, color, username, userId, isAgent } = message.payload;
+            console.log(`[WS] Pixel placed at (${x}, ${y}) with color ${color} by ${username || 'unknown'}`);
             updatePixel(x, y, color as ColorIndex);
+            // Dispatch pixel_activity event for ActivityFeed component
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(
+                new CustomEvent('pixel_activity', {
+                  detail: {
+                    x,
+                    y,
+                    color,
+                    // Map server field names to what ActivityFeed expects
+                    agentName: isAgent ? username : undefined,
+                    agentId: isAgent ? userId : undefined,
+                  },
+                })
+              );
+            }
             break;
 
           case 'pixel_error':
