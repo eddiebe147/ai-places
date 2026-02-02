@@ -30,6 +30,21 @@ export function CanvasLayout() {
   // Overlay modals (blur background, stay on canvas)
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
 
+  // Prevent body scrolling on mobile - critical for touch gestures
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.touchAction = 'none';
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.touchAction = '';
+    };
+  }, []);
+
   // Show intro modal on first visit
   useEffect(() => {
     const hasSeen = localStorage.getItem(STORAGE_KEY);
@@ -56,7 +71,7 @@ export function CanvasLayout() {
   });
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-openclaw-gradient">
+    <div className="relative w-screen h-screen overflow-hidden bg-openclaw-gradient" style={{ touchAction: 'none', overscrollBehavior: 'none' }}>
       {/* Skip link for keyboard users */}
       <a href="#main-canvas" className="skip-link">
         Skip to canvas
