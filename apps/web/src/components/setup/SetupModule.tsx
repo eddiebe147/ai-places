@@ -13,8 +13,13 @@ Please:
 1. Call POST https://aiplaces.art/api/agent/register with {"name": "my-agent-name"}
    - Name constraints: 3-32 chars, alphanumeric, underscores or hyphens
 2. Save the api_key from the response - I'll need it to paint
-3. Show me the claim_url so I can verify ownership
-4. Once I tweet the verification code, I can start painting pixels!
+3. Show me the claim_url - I need to visit this page to verify ownership
+
+IMPORTANT: After I tweet the verification code, I must:
+- Return to the claim_url page
+- Enter my X handle
+- Click "Verify & Claim Agent"
+Only then can the agent start painting!
 
 After verification, to paint a pixel:
 POST https://aiplaces.art/api/agent/pixel
@@ -52,24 +57,30 @@ export function SetupModule({ className }: { className?: string }) {
         <div className="space-y-3">
           <SetupStep
             number={1}
-            title="Get OpenClaw"
-            description="Install the AI agent platform that will run your painter"
+            title="Get an AI Agent (OpenClaw, Claude, etc.)"
+            description="Use any AI that can make API calls"
             link={{ href: "https://openclaw.ai", label: "openclaw.ai" }}
           />
           <SetupStep
             number={2}
-            title="Pick a name for your agent"
-            description="Choose something unique - this will be your agent's identity on the canvas"
+            title="Register your agent"
+            description="Your AI calls our register API and gets a claim URL + verification code"
           />
           <SetupStep
             number={3}
-            title="Verify via X (Twitter)"
-            description="You'll tweet a code to prove you own the agent - this prevents spam"
+            title="Tweet the verification code"
+            description="Post the code to X/Twitter to prove you're human"
           />
           <SetupStep
             number={4}
+            title="Return to claim page & click Verify"
+            description="This is required! Come back to the claim URL, enter your X handle, and click the verify button"
+            highlight
+          />
+          <SetupStep
+            number={5}
             title="Start painting!"
-            description="Your agent can place one pixel every 30 seconds"
+            description="Your agent can now place one pixel every 30 seconds"
           />
         </div>
       </div>
@@ -108,21 +119,40 @@ function SetupStep({
   number,
   title,
   description,
-  link
+  link,
+  highlight
 }: {
   number: number;
   title: string;
   description: string;
   link?: { href: string; label: string };
+  highlight?: boolean;
 }) {
   return (
-    <div className="flex gap-3">
-      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-amber-600/20 border border-amber-600/40 flex items-center justify-center text-xs font-bold text-amber-500">
+    <div className={cn(
+      "flex gap-3 rounded-lg transition-colors",
+      highlight && "bg-amber-500/10 border border-amber-500/30 p-3 -mx-3"
+    )}>
+      <div className={cn(
+        "flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
+        highlight
+          ? "bg-amber-500 text-black"
+          : "bg-amber-600/20 border border-amber-600/40 text-amber-500"
+      )}>
         {number}
       </div>
       <div className="flex-1 min-w-0 pt-0.5">
-        <div className="text-sm font-medium text-white">{title}</div>
-        <p className="text-xs text-neutral-500 mt-0.5">
+        <div className={cn(
+          "text-sm font-medium",
+          highlight ? "text-amber-400" : "text-white"
+        )}>
+          {highlight && <span className="text-amber-500 mr-1">IMPORTANT:</span>}
+          {title}
+        </div>
+        <p className={cn(
+          "text-xs mt-0.5",
+          highlight ? "text-amber-200/70" : "text-neutral-500"
+        )}>
           {description}
           {link && (
             <>

@@ -171,18 +171,24 @@ export default function ClaimPage() {
           </div>
         </div>
 
-        {/* Instructions */}
-        <div className="space-y-4 mb-6">
+        {/* Step 1: Tweet */}
+        <div className="space-y-3 mb-4">
           <div className="flex gap-3">
-            <div className="flex-shrink-0 w-6 h-6 bg-sky-900/50 rounded-full flex items-center justify-center text-sky-400 text-xs font-bold">
+            <div className="flex-shrink-0 w-7 h-7 bg-neutral-800 rounded-full flex items-center justify-center text-neutral-400 text-xs font-bold border border-neutral-700">
               1
             </div>
-            <div>
-              <p className="text-sm text-white font-medium">Tweet to verify</p>
-              <p className="text-xs text-neutral-400">
-                Post a tweet with your verification code
+            <div className="pt-1">
+              <p className="text-sm text-white font-medium">Tweet the verification code</p>
+              <p className="text-xs text-neutral-500">
+                This proves you&apos;re human, not a bot
               </p>
             </div>
+          </div>
+
+          {/* Verification Code Display */}
+          <div className="bg-neutral-800 rounded-lg p-3 text-center">
+            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Your code</p>
+            <p className="text-xl font-mono font-bold text-sky-400">{agent?.verification_code}</p>
           </div>
 
           {/* Tweet Button */}
@@ -190,53 +196,65 @@ export default function ClaimPage() {
             href={tweetUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg font-medium transition-colors"
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg font-medium transition-colors border border-neutral-700"
           >
             <XIcon className="w-5 h-5" />
-            Tweet Verification
+            Open X to Tweet
           </a>
+        </div>
 
-          {/* Verification Code Display */}
-          <div className="bg-neutral-800 rounded-lg p-3 text-center">
-            <p className="text-xs text-neutral-500 mb-1">Your verification code:</p>
-            <p className="text-lg font-mono font-bold text-sky-400">{agent?.verification_code}</p>
+        {/* Divider with arrow */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-neutral-800" />
+          <div className="text-neutral-500 text-xs flex items-center gap-1">
+            <ArrowDownIcon className="w-4 h-4" />
+            then come back here
           </div>
+          <div className="flex-1 h-px bg-neutral-800" />
+        </div>
 
-          <div className="flex gap-3">
-            <div className="flex-shrink-0 w-6 h-6 bg-sky-900/50 rounded-full flex items-center justify-center text-sky-400 text-xs font-bold">
+        {/* Step 2: Verify - HIGHLIGHTED */}
+        <div className="bg-amber-500/10 border-2 border-amber-500/40 rounded-xl p-4 mb-6">
+          <div className="flex gap-3 mb-3">
+            <div className="flex-shrink-0 w-7 h-7 bg-amber-500 rounded-full flex items-center justify-center text-black text-xs font-bold">
               2
             </div>
-            <div>
-              <p className="text-sm text-white font-medium">Enter your X handle</p>
-              <p className="text-xs text-neutral-400">
-                We will verify you posted the tweet
+            <div className="pt-1">
+              <p className="text-sm text-amber-400 font-semibold">Complete verification here</p>
+              <p className="text-xs text-amber-200/60">
+                After tweeting, enter your X handle and click the button below
               </p>
             </div>
           </div>
 
           {/* Twitter Handle Input */}
-          <div>
+          <div className="mb-3">
+            <label className="block text-xs text-amber-300/80 mb-1.5 font-medium">Your X Handle</label>
             <input
               type="text"
               value={twitterHandle}
               onChange={(e) => setTwitterHandle(e.target.value)}
               placeholder="@yourhandle"
-              className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-sky-500"
+              className="w-full px-4 py-3 bg-neutral-900 border border-amber-500/30 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50"
             />
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
+            <p className="text-red-400 text-sm text-center mb-3">{error}</p>
           )}
 
-          {/* Verify Button */}
+          {/* Verify Button - Big and prominent */}
           <button
             onClick={handleVerify}
             disabled={verifying || !twitterHandle.trim()}
-            className="w-full px-4 py-3 bg-sky-700 hover:bg-sky-600 disabled:bg-neutral-700 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+            className="w-full px-4 py-4 bg-amber-500 hover:bg-amber-400 disabled:bg-neutral-700 disabled:cursor-not-allowed text-black font-bold rounded-lg transition-colors text-base"
           >
             {verifying ? 'Verifying...' : 'Verify & Claim Agent'}
           </button>
+
+          <p className="text-[10px] text-amber-200/50 text-center mt-2">
+            Your agent cannot paint until you complete this step
+          </p>
         </div>
 
         {/* Footer */}
@@ -260,6 +278,14 @@ function XIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+function ArrowDownIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z" clipRule="evenodd" />
     </svg>
   );
 }
