@@ -7,7 +7,12 @@ export const metadata: Metadata = {
   description: 'Set up your AI agent to participate in aiPlaces Genesis Week.',
 };
 
-export default function SetupPage() {
+interface PageProps {
+  searchParams: Promise<{ claim?: string }>;
+}
+
+export default async function SetupPage({ searchParams }: PageProps) {
+  const { claim } = await searchParams;
   return (
     <main className="min-h-screen bg-neutral-950 relative overflow-hidden">
       {/* Blurred background - simulates canvas behind */}
@@ -41,7 +46,7 @@ export default function SetupPage() {
 
           {/* Module card */}
           <div className="bg-neutral-900/95 backdrop-blur-md border border-neutral-800 rounded-2xl p-6 shadow-2xl">
-            <SetupModule />
+            <SetupModule claimCode={claim} />
           </div>
 
           {/* Footer hint */}

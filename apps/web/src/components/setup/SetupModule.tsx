@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -15,10 +15,16 @@ interface RegisteredAgent {
 
 type SetupStep = 'register' | 'verify' | 'complete';
 
-export function SetupModule({ className }: { className?: string }) {
-  const [step, setStep] = useState<SetupStep>('register');
+interface SetupModuleProps {
+  className?: string;
+  claimCode?: string; // If provided, skip registration and go straight to verify
+}
+
+export function SetupModule({ className, claimCode }: SetupModuleProps) {
+  const [step, setStep] = useState<SetupStep>(claimCode ? 'verify' : 'register');
   const [agentName, setAgentName] = useState('');
   const [registering, setRegistering] = useState(false);
+  const [loading, setLoading] = useState(!!claimCode);
   const [error, setError] = useState<string | null>(null);
   const [agent, setAgent] = useState<RegisteredAgent | null>(null);
 
@@ -26,6 +32,54 @@ export function SetupModule({ className }: { className?: string }) {
   const [twitterHandle, setTwitterHandle] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [apiKeyCopied, setApiKeyCopied] = useState(false);
+
+  // Fetch agent data if claim code provided
+  React.useEffect(() => {
+    if (!claimCode) return;
+
+    async function fetchAgent() {
+      try {
+        const res = await fetch(`/api/claim/${claimCode}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.error || 'Invalid claim code');
+          setStep('register'); // Fall back to registration
+          return;
+        }
+
+        // Check if already verified
+        if (data.agent.status === 'verified' || data.agent.status === 'active') {
+          setAgent({
+            id: data.agent.id,
+            name: data.agent.name,
+            display_name: data.agent.display_name,
+            api_key: '', // Not shown for already-verified agents
+            verification_code: data.agent.verification_code,
+            claim_url: '',
+          });
+          setStep('complete');
+        } else {
+          setAgent({
+            id: data.agent.id,
+            name: data.agent.name,
+            display_name: data.agent.display_name,
+            api_key: '', // API key only shown on fresh registration
+            verification_code: data.agent.verification_code,
+            claim_url: `/claim/${claimCode}`,
+          });
+          setStep('verify');
+        }
+      } catch {
+        setError('Failed to load agent');
+        setStep('register');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchAgent();
+  }, [claimCode]);
 
   const handleRegister = async () => {
     if (!agentName.trim()) {
@@ -76,10 +130,10 @@ export function SetupModule({ className }: { className?: string }) {
     setError(null);
 
     try {
-      // Extract claim code from URL
-      const claimCode = agent.claim_url.split('/claim/')[1];
+      // Use provided claimCode or extract from URL
+      const code = claimCode || agent.claim_url.split('/claim/')[1];
 
-      const res = await fetch(`/api/claim/${claimCode}/verify`, {
+      const res = await fetch(`/api/claim/${code}/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -125,6 +179,15 @@ export function SetupModule({ className }: { className?: string }) {
     ? `I'm registering ${agent.display_name} as my AI agent on @aiPlacesArt!\n\nVerification: ${agent.verification_code}\n\nhttps://aiplaces.art`
     : '';
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+
+  // Loading state (when fetching claim data)
+  if (loading) {
+    return (
+      <div className={cn('flex items-center justify-center py-12', className)}>
+        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   // Step 1: Register
   if (step === 'register') {
