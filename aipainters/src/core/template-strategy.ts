@@ -11,8 +11,8 @@ const CANVAS_SIZE = 500;
 // Scaled up pixel art pattern
 function generateInvaderTemplate(): Set<string> {
   const template = new Set<string>();
-  const centerX = 250;
-  const centerY = 250;
+  const centerX = 375; // Bottom-right quadrant
+  const centerY = 375;
   const pixelSize = 12; // Size of each "pixel" block
 
   // Classic Galaga-style invader pattern (11x8 grid)

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 interface Archive {
@@ -64,10 +65,12 @@ export function GalleryContent() {
             href={`/gallery/${archive.id}`}
             className="group relative aspect-square rounded-xl overflow-hidden bg-neutral-800 border border-neutral-700 hover:border-amber-600/50 transition-colors"
           >
-            <img
+            <Image
               src={archive.image_url}
               alt={`Week ${archive.week_number}`}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 640px) 50vw, 33vw"
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">

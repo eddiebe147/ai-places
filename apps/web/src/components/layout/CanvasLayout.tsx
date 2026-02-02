@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { PixelCanvas } from '@/components/canvas/PixelCanvas';
 import { ConnectionStatus } from '@/components/ui/ConnectionStatus';
@@ -24,53 +25,12 @@ export function CanvasLayout() {
   const [showIntro, setShowIntro] = useState(false);
   const [introTab, setIntroTab] = useState<'watch' | 'rules' | 'agent'>('watch');
   const [showMobileNav, setShowMobileNav] = useState(false);
+  const [showMascotImage, setShowMascotImage] = useState(true);
   // Hide sidebars by default - CSS will show on desktop
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
   // Overlay modals (blur background, stay on canvas)
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
-
-  // Prevent body scrolling on mobile - but allow touch on UI elements
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-    };
-  }, []);
-
-  // CRITICAL: Document-level touch interceptor using capture phase
-  // This fires BEFORE Safari's gesture recognizer can claim the touch
-  useLayoutEffect(() => {
-    const handleTouchStart = (e: TouchEvent) => {
-      // Check if touch is on the canvas area (main#main-canvas or its children)
-      const target = e.target as HTMLElement;
-      const mainCanvas = document.getElementById('main-canvas');
-      if (mainCanvas && mainCanvas.contains(target)) {
-        e.preventDefault();
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      const target = e.target as HTMLElement;
-      const mainCanvas = document.getElementById('main-canvas');
-      if (mainCanvas && mainCanvas.contains(target)) {
-        e.preventDefault();
-      }
-    };
-
-    // Capture phase (third param true) runs BEFORE bubbling
-    // passive: false allows preventDefault to work
-    document.addEventListener('touchstart', handleTouchStart, { capture: true, passive: false });
-    document.addEventListener('touchmove', handleTouchMove, { capture: true, passive: false });
-
-    return () => {
-      document.removeEventListener('touchstart', handleTouchStart, { capture: true });
-      document.removeEventListener('touchmove', handleTouchMove, { capture: true });
-    };
-  }, []);
 
   // Show intro modal on first visit
   useEffect(() => {
@@ -148,12 +108,16 @@ export function CanvasLayout() {
               <div className="relative w-9 h-9 rounded-xl overflow-hidden ring-2 ring-amber-600/40 group-hover:ring-amber-500/60 transition-all">
                 {/* Lobster artist image - fallback to gradient */}
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-700 via-orange-600 to-red-800" />
-                <img
-                  src="/mascot.png"
-                  alt="Clawdbot the Lobster Artist"
-                  className="absolute inset-0 w-full h-full object-cover"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
+                {showMascotImage ? (
+                  <Image
+                    src="/mascot.png"
+                    alt="Clawdbot the Lobster Artist"
+                    fill
+                    sizes="36px"
+                    className="object-cover"
+                    onError={() => setShowMascotImage(false)}
+                  />
+                ) : null}
               </div>
               {/* Brand name with beta badge - hidden on mobile */}
               <div className="hidden lg:flex items-center gap-1.5">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { SetupModule } from '@/components/setup/SetupModule';
@@ -16,6 +17,7 @@ type Tab = 'watch' | 'rules' | 'agent';
 export function InfoModal({ isOpen, onClose, initialTab = 'watch' }: InfoModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  const [showMascotImage, setShowMascotImage] = useState(true);
 
   // Reset to initial tab when opened
   useEffect(() => {
@@ -71,15 +73,17 @@ export function InfoModal({ isOpen, onClose, initialTab = 'watch' }: InfoModalPr
           </button>
 
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl overflow-hidden ring-2 ring-amber-600/40 flex-shrink-0">
-              <img
-                src="/mascot.png"
-                alt="Clawdbot"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
+            <div className="relative w-14 h-14 rounded-xl overflow-hidden ring-2 ring-amber-600/40 flex-shrink-0">
+              {showMascotImage ? (
+                <Image
+                  src="/mascot.png"
+                  alt="Clawdbot"
+                  fill
+                  sizes="56px"
+                  className="object-cover"
+                  onError={() => setShowMascotImage(false)}
+                />
+              ) : null}
             </div>
             <div>
               <h2 id="info-modal-title" className="text-xl font-bold text-white">
