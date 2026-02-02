@@ -80,7 +80,7 @@ export function CanvasLayout() {
       </div>
 
       {/* Main canvas */}
-      <main id="main-canvas" role="application" aria-label="AI collaborative pixel canvas" className="absolute inset-0">
+      <main id="main-canvas" role="application" aria-label="AI collaborative pixel canvas" className="absolute inset-0" style={{ touchAction: 'none' }}>
         <PixelCanvas />
       </main>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, ZOOM } from '@aiplaces/shared';
 
 interface ViewportState {
@@ -35,8 +35,11 @@ function screenToCanvas(
 }
 
 /**
- * Hook for pan and zoom navigation
- * Returns touch handlers to be attached via React props for reliable mobile support
+ * Hook for pan and zoom navigation with proper mobile touch support.
+ *
+ * CRITICAL: Uses native event listeners with { passive: false } attached
+ * directly to the DOM element. This bypasses React's event delegation
+ * system which makes touch events passive by default on mobile Safari.
  */
 export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptions) {
   const [viewport, setViewport] = useState<ViewportState>({
@@ -48,14 +51,16 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     targetZoom: ZOOM.DEFAULT,
   });
 
-  // Refs for event handlers
+  // ALL REFS - to avoid stale closures in event handlers
+  // Event handlers are attached once and never re-attached, so they must
+  // access current values via refs, not via closure over state.
   const viewportRef = useRef(viewport);
   const onCoordinateChangeRef = useRef(onCoordinateChange);
   const isDraggingRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
   const rafRef = useRef<number | null>(null);
 
-  // Touch state
+  // Touch state refs
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
   const isTouchingRef = useRef(false);
@@ -63,10 +68,11 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
   const initialZoomRef = useRef<number>(ZOOM.DEFAULT);
   const touchMovedRef = useRef(false);
 
+  // Keep refs in sync
   useEffect(() => { viewportRef.current = viewport; }, [viewport]);
   useEffect(() => { onCoordinateChangeRef.current = onCoordinateChange; }, [onCoordinateChange]);
 
-  // Animation loop
+  // Smooth animation loop
   useEffect(() => {
     const animate = () => {
       setViewport((prev) => {
@@ -88,13 +94,17 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, []);
 
-  const getPinchDistance = (t1: React.Touch, t2: React.Touch): number => {
+  // Utility functions (no dependencies, safe to use anywhere)
+  const getPinchDistance = (t1: Touch, t2: Touch): number => {
     return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
   };
 
-  // REACT TOUCH HANDLERS - these get attached via props, not addEventListener
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    // Always prevent default to stop browser scroll/zoom
+  // ============================================================
+  // NATIVE EVENT HANDLERS - These access state via refs only!
+  // ============================================================
+
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    // CRITICAL: Must call preventDefault to stop browser scroll/zoom
     e.preventDefault();
     e.stopPropagation();
 
@@ -111,14 +121,14 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     } else if (e.touches.length === 2) {
       initialPinchDistRef.current = getPinchDistance(e.touches[0], e.touches[1]);
       initialZoomRef.current = viewportRef.current.targetZoom;
-      const rect = container.getBoundingClientRect();
       const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       lastTouchRef.current = { x: midX, y: midY };
     }
   }, [containerRef]);
 
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    // CRITICAL: Must call preventDefault to stop browser scroll/zoom
     e.preventDefault();
     e.stopPropagation();
 
@@ -128,6 +138,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     const rect = container.getBoundingClientRect();
 
     if (e.touches.length === 1 && lastTouchRef.current) {
+      // Single finger pan
       const touch = e.touches[0];
       const dx = touch.clientX - lastTouchRef.current.x;
       const dy = touch.clientY - lastTouchRef.current.y;
@@ -146,6 +157,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
         targetY: prev.targetY + dy,
       }));
 
+      // Update coordinate display
       if (onCoordinateChangeRef.current) {
         const coords = screenToCanvas(
           touch.clientX - rect.left,
@@ -157,6 +169,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
         onCoordinateChangeRef.current(coords.x, coords.y);
       }
     } else if (e.touches.length === 2 && initialPinchDistRef.current > 0) {
+      // Two finger pinch zoom
       touchMovedRef.current = true;
       const currentDist = getPinchDistance(e.touches[0], e.touches[1]);
       const scale = currentDist / initialPinchDistRef.current;
@@ -181,15 +194,18 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     }
   }, [containerRef]);
 
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
     const container = containerRef.current;
     if (!container) return;
 
+    // Detect tap (short touch without movement)
     if (touchStartRef.current && !touchMovedRef.current && e.changedTouches.length === 1) {
       const touchDuration = Date.now() - touchStartRef.current.time;
       if (touchDuration < 300) {
         const touch = e.changedTouches[0];
         const rect = container.getBoundingClientRect();
+
+        // Update coordinates for tap location
         if (onCoordinateChangeRef.current) {
           const coords = screenToCanvas(
             touch.clientX - rect.left,
@@ -200,12 +216,15 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
           );
           onCoordinateChangeRef.current(coords.x, coords.y);
         }
+
+        // Dispatch custom tap event for click handling
         container.dispatchEvent(new CustomEvent('canvasTap', {
           detail: { clientX: touch.clientX, clientY: touch.clientY },
         }));
       }
     }
 
+    // Reset touch state
     if (e.touches.length === 0) {
       isTouchingRef.current = false;
       touchStartRef.current = null;
@@ -213,6 +232,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
       initialPinchDistRef.current = 0;
       touchMovedRef.current = false;
     } else if (e.touches.length === 1) {
+      // Went from 2 fingers to 1
       lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       initialPinchDistRef.current = 0;
     }
@@ -223,9 +243,11 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     e.preventDefault();
     const container = containerRef.current;
     if (!container) return;
+
     const rect = container.getBoundingClientRect();
     const pointX = e.clientX - rect.left;
     const pointY = e.clientY - rect.top;
+
     setViewport((prev) => {
       const zoomDelta = -e.deltaY * 0.002;
       const newZoom = Math.max(ZOOM.MIN, Math.min(ZOOM.MAX, prev.targetZoom * (1 + zoomDelta)));
@@ -253,15 +275,27 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
   const handleMouseMove = useCallback((e: MouseEvent) => {
     const container = containerRef.current;
     if (!container) return;
+
     const rect = container.getBoundingClientRect();
+
+    // Update coordinate display
     if (onCoordinateChangeRef.current) {
-      const coords = screenToCanvas(e.clientX - rect.left, e.clientY - rect.top, viewportRef.current, rect.width, rect.height);
+      const coords = screenToCanvas(
+        e.clientX - rect.left,
+        e.clientY - rect.top,
+        viewportRef.current,
+        rect.width,
+        rect.height
+      );
       onCoordinateChangeRef.current(coords.x, coords.y);
     }
+
     if (!isDraggingRef.current) return;
+
     const dx = e.clientX - lastPosRef.current.x;
     const dy = e.clientY - lastPosRef.current.y;
     lastPosRef.current = { x: e.clientX, y: e.clientY };
+
     setViewport((prev) => ({
       ...prev,
       x: prev.x + dx,
@@ -271,9 +305,11 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     }));
   }, [containerRef]);
 
-  const handleMouseUp = useCallback(() => { isDraggingRef.current = false; }, []);
+  const handleMouseUp = useCallback(() => {
+    isDraggingRef.current = false;
+  }, []);
 
-  // Keyboard
+  // Keyboard navigation
   const pan = useCallback((dx: number, dy: number) => {
     setViewport((prev) => ({ ...prev, targetX: prev.targetX + dx, targetY: prev.targetY + dy }));
   }, []);
@@ -294,6 +330,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     const container = containerRef.current;
     if (!container) return;
     if (!container.contains(document.activeElement) && document.activeElement !== container) return;
+
     const panStep = 50;
     switch (e.key) {
       case 'ArrowUp': e.preventDefault(); pan(0, panStep); break;
@@ -306,23 +343,39 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     }
   }, [containerRef, pan, zoomIn, zoomOut, resetView]);
 
-  // Set up mouse/wheel/keyboard listeners (NOT touch - those use React props)
-  useEffect(() => {
+  // ============================================================
+  // ATTACH NATIVE LISTENERS - Using useLayoutEffect for earliest timing
+  // { passive: false } is CRITICAL for preventDefault to work on mobile!
+  // ============================================================
+  useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    // Touch events - MUST be { passive: false } to allow preventDefault
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: false });
+    container.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+    // Mouse/wheel events
     container.addEventListener('wheel', handleWheel, { passive: false });
     container.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('keydown', handleKeyDown);
+
     return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchEnd);
       container.removeEventListener('wheel', handleWheel);
       container.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [containerRef, handleWheel, handleMouseDown, handleMouseMove, handleMouseUp, handleKeyDown]);
+  }, [containerRef, handleTouchStart, handleTouchMove, handleTouchEnd, handleWheel, handleMouseDown, handleMouseMove, handleMouseUp, handleKeyDown]);
 
   const centerOn = useCallback((canvasX: number, canvasY: number, zoom?: number) => {
     setViewport((prev) => {
@@ -353,11 +406,5 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     getCanvasCoords,
     isDragging: isDraggingRef.current,
     isTouching: isTouchingRef.current,
-    // RETURN TOUCH HANDLERS for React props
-    touchHandlers: {
-      onTouchStart,
-      onTouchMove,
-      onTouchEnd,
-    },
   };
 }
