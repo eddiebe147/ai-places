@@ -256,12 +256,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
         // Update Redis week config
         try {
-          const configStr = await redis.get(REDIS_KEYS.WEEK_CONFIG);
-          if (configStr && typeof configStr === 'string') {
-            const config = JSON.parse(configStr);
+          const configRaw = await redis.get(REDIS_KEYS.WEEK_CONFIG);
+          let config: WeekConfig;
+
+          if (configRaw) {
+            // Handle both string and object responses from Redis
+            if (typeof configRaw === 'string') {
+              config = JSON.parse(configRaw);
+            } else if (typeof configRaw === 'object') {
+              config = configRaw as WeekConfig;
+            } else {
+              config = createWeekConfig(weekNumber);
+            }
             config.weekNumber = weekNumber;
-            await redis.set(REDIS_KEYS.WEEK_CONFIG, JSON.stringify(config));
+          } else {
+            // Create new config if none exists
+            config = createWeekConfig(weekNumber);
           }
+
+          await redis.set(REDIS_KEYS.WEEK_CONFIG, JSON.stringify(config));
         } catch (redisError) {
           console.warn('Failed to update Redis week config:', redisError);
           // Continue - Supabase was updated successfully
