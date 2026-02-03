@@ -105,7 +105,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     // CRITICAL: Must call preventDefault to stop browser scroll/zoom
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     e.stopPropagation();
 
     const container = containerRef.current;
@@ -129,7 +129,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     // CRITICAL: Must call preventDefault to stop browser scroll/zoom
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     e.stopPropagation();
 
     const container = containerRef.current;
