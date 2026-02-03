@@ -103,6 +103,27 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps = {}) {
     };
   }, [placePixelAt]);
 
+  // iOS Safari: prevent page scroll when interacting with the canvas
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const preventCanvasScroll = (event: TouchEvent) => {
+      const target = event.target as Node | null;
+      if (target && container.contains(target)) {
+        if (event.cancelable) event.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchstart', preventCanvasScroll, { passive: false });
+    document.addEventListener('touchmove', preventCanvasScroll, { passive: false });
+
+    return () => {
+      document.removeEventListener('touchstart', preventCanvasScroll);
+      document.removeEventListener('touchmove', preventCanvasScroll);
+    };
+  }, []);
+
   // Canvas transform style
   const transformStyle = {
     transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
@@ -195,3 +216,4 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps = {}) {
     </div>
   );
 }
+
