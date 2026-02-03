@@ -67,6 +67,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
   const initialPinchDistRef = useRef<number>(0);
   const initialZoomRef = useRef<number>(ZOOM.DEFAULT);
   const touchMovedRef = useRef(false);
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
 
   // Keep refs in sync
   useEffect(() => { viewportRef.current = viewport; }, [viewport]);
@@ -99,13 +100,34 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
   };
 
+  const dispatchCanvasTap = useCallback((clientX: number, clientY: number) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+
+    if (onCoordinateChangeRef.current) {
+      const coords = screenToCanvas(
+        clientX - rect.left,
+        clientY - rect.top,
+        viewportRef.current,
+        rect.width,
+        rect.height
+      );
+      onCoordinateChangeRef.current(coords.x, coords.y);
+    }
+
+    container.dispatchEvent(new CustomEvent('canvasTap', {
+      detail: { clientX, clientY },
+    }));
+  }, [containerRef]);
+
   // ============================================================
   // NATIVE EVENT HANDLERS - These access state via refs only!
   // ============================================================
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     // CRITICAL: Must call preventDefault to stop browser scroll/zoom
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     e.stopPropagation();
 
     const container = containerRef.current;
@@ -129,7 +151,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     // CRITICAL: Must call preventDefault to stop browser scroll/zoom
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     e.stopPropagation();
 
     const container = containerRef.current;
@@ -203,24 +225,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
       const touchDuration = Date.now() - touchStartRef.current.time;
       if (touchDuration < 300) {
         const touch = e.changedTouches[0];
-        const rect = container.getBoundingClientRect();
-
-        // Update coordinates for tap location
-        if (onCoordinateChangeRef.current) {
-          const coords = screenToCanvas(
-            touch.clientX - rect.left,
-            touch.clientY - rect.top,
-            viewportRef.current,
-            rect.width,
-            rect.height
-          );
-          onCoordinateChangeRef.current(coords.x, coords.y);
-        }
-
-        // Dispatch custom tap event for click handling
-        container.dispatchEvent(new CustomEvent('canvasTap', {
-          detail: { clientX: touch.clientX, clientY: touch.clientY },
-        }));
+        dispatchCanvasTap(touch.clientX, touch.clientY);
       }
     }
 
@@ -236,7 +241,148 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
       lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       initialPinchDistRef.current = 0;
     }
+  }, [containerRef, dispatchCanvasTap]);
+
+  const handlePointerDown = useCallback((e: PointerEvent) => {
+    if (e.pointerType === 'mouse') return;
+    if (e.cancelable) e.preventDefault();
+    e.stopPropagation();
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (container.setPointerCapture) {
+      try {
+        container.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignore capture errors (e.g. iOS Safari quirks)
+      }
+    }
+
+    isTouchingRef.current = true;
+    touchMovedRef.current = false;
+
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (activePointersRef.current.size === 1) {
+      touchStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+      lastTouchRef.current = { x: e.clientX, y: e.clientY };
+    } else if (activePointersRef.current.size === 2) {
+      const [p1, p2] = Array.from(activePointersRef.current.values());
+      touchMovedRef.current = true;
+      initialPinchDistRef.current = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      initialZoomRef.current = viewportRef.current.targetZoom;
+      const midX = (p1.x + p2.x) / 2;
+      const midY = (p1.y + p2.y) / 2;
+      lastTouchRef.current = { x: midX, y: midY };
+    }
   }, [containerRef]);
+
+  const handlePointerMove = useCallback((e: PointerEvent) => {
+    if (e.pointerType === 'mouse') return;
+    if (e.cancelable) e.preventDefault();
+    e.stopPropagation();
+
+    const container = containerRef.current;
+    if (!container || !isTouchingRef.current) return;
+
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    const rect = container.getBoundingClientRect();
+    const pointers = Array.from(activePointersRef.current.values());
+
+    if (pointers.length === 1 && lastTouchRef.current) {
+      const point = pointers[0];
+      const dx = point.x - lastTouchRef.current.x;
+      const dy = point.y - lastTouchRef.current.y;
+
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        touchMovedRef.current = true;
+      }
+
+      lastTouchRef.current = { x: point.x, y: point.y };
+
+      setViewport((prev) => ({
+        ...prev,
+        x: prev.x + dx,
+        y: prev.y + dy,
+        targetX: prev.targetX + dx,
+        targetY: prev.targetY + dy,
+      }));
+
+      if (onCoordinateChangeRef.current) {
+        const coords = screenToCanvas(
+          point.x - rect.left,
+          point.y - rect.top,
+          viewportRef.current,
+          rect.width,
+          rect.height
+        );
+        onCoordinateChangeRef.current(coords.x, coords.y);
+      }
+    } else if (pointers.length === 2 && initialPinchDistRef.current > 0) {
+      touchMovedRef.current = true;
+      const [p1, p2] = pointers;
+      const currentDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      const scale = currentDist / initialPinchDistRef.current;
+      const newZoom = Math.max(ZOOM.MIN, Math.min(ZOOM.MAX, initialZoomRef.current * scale));
+
+      const midX = (p1.x + p2.x) / 2 - rect.left;
+      const midY = (p1.y + p2.y) / 2 - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const relX = midX - centerX;
+      const relY = midY - centerY;
+
+      setViewport((prev) => {
+        const zoomScale = newZoom / prev.targetZoom;
+        return {
+          ...prev,
+          targetX: prev.targetX * zoomScale - relX * (zoomScale - 1),
+          targetY: prev.targetY * zoomScale - relY * (zoomScale - 1),
+          targetZoom: newZoom,
+        };
+      });
+    }
+  }, [containerRef]);
+
+  const handlePointerUp = useCallback((e: PointerEvent) => {
+    if (e.pointerType === 'mouse') return;
+    if (e.cancelable) e.preventDefault();
+    e.stopPropagation();
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (container.hasPointerCapture?.(e.pointerId)) {
+      try {
+        container.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore release errors
+      }
+    }
+
+    activePointersRef.current.delete(e.pointerId);
+
+    if (activePointersRef.current.size === 0) {
+      if (touchStartRef.current && !touchMovedRef.current) {
+        const touchDuration = Date.now() - touchStartRef.current.time;
+        if (touchDuration < 300) {
+          dispatchCanvasTap(e.clientX, e.clientY);
+        }
+      }
+
+      isTouchingRef.current = false;
+      touchStartRef.current = null;
+      lastTouchRef.current = null;
+      initialPinchDistRef.current = 0;
+      touchMovedRef.current = false;
+    } else if (activePointersRef.current.size === 1) {
+      const remaining = Array.from(activePointersRef.current.values())[0];
+      lastTouchRef.current = { x: remaining.x, y: remaining.y };
+      initialPinchDistRef.current = 0;
+    }
+  }, [containerRef, dispatchCanvasTap]);
 
   // Mouse wheel zoom
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -351,11 +497,20 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     const container = containerRef.current;
     if (!container) return;
 
-    // Touch events - MUST be { passive: false } to allow preventDefault
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd, { passive: false });
-    container.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+    const supportsPointerEvents = 'PointerEvent' in window;
+
+    if (supportsPointerEvents) {
+      container.addEventListener('pointerdown', handlePointerDown, { passive: false });
+      window.addEventListener('pointermove', handlePointerMove, { passive: false });
+      window.addEventListener('pointerup', handlePointerUp, { passive: false });
+      window.addEventListener('pointercancel', handlePointerUp, { passive: false });
+    } else {
+      // Touch events - MUST be { passive: false } to allow preventDefault
+      container.addEventListener('touchstart', handleTouchStart, { passive: false });
+      container.addEventListener('touchmove', handleTouchMove, { passive: false });
+      container.addEventListener('touchend', handleTouchEnd, { passive: false });
+      container.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+    }
 
     // Mouse/wheel events
     container.addEventListener('wheel', handleWheel, { passive: false });
@@ -365,17 +520,37 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('touchcancel', handleTouchEnd);
+      if (supportsPointerEvents) {
+        container.removeEventListener('pointerdown', handlePointerDown);
+        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointerup', handlePointerUp);
+        window.removeEventListener('pointercancel', handlePointerUp);
+      } else {
+        container.removeEventListener('touchstart', handleTouchStart);
+        container.removeEventListener('touchmove', handleTouchMove);
+        container.removeEventListener('touchend', handleTouchEnd);
+        container.removeEventListener('touchcancel', handleTouchEnd);
+      }
       container.removeEventListener('wheel', handleWheel);
       container.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [containerRef, handleTouchStart, handleTouchMove, handleTouchEnd, handleWheel, handleMouseDown, handleMouseMove, handleMouseUp, handleKeyDown]);
+  }, [
+    containerRef,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleWheel,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    handleKeyDown,
+  ]);
 
   const centerOn = useCallback((canvasX: number, canvasY: number, zoom?: number) => {
     setViewport((prev) => {

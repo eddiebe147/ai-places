@@ -48,13 +48,12 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps = {}) {
   // Note: Canvas data is loaded from WebSocket server via useWebSocket hook
   // The server sends 'canvas_state' message on connect which triggers initializeCanvas
 
-  // Handle pixel placement
-  const handleClick = useCallback(
-    (e: React.MouseEvent) => {
+  const placePixelAt = useCallback(
+    (clientX: number, clientY: number) => {
       if (isDragging) return;
       if (cooldownEnd && Date.now() < cooldownEnd) return;
 
-      const coords = getCanvasCoords(e.clientX, e.clientY);
+      const coords = getCanvasCoords(clientX, clientY);
 
       // Update local state immediately (optimistic)
       updatePixel(coords.x, coords.y, selectedColor);
@@ -81,6 +80,28 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps = {}) {
       onPlacePixel,
     ]
   );
+
+  // Handle pixel placement (mouse)
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    placePixelAt(e.clientX, e.clientY);
+  }, [placePixelAt]);
+
+  // Handle pixel placement (touch/pointer tap)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleCanvasTap = (event: Event) => {
+      const customEvent = event as CustomEvent<{ clientX: number; clientY: number }>;
+      if (!customEvent.detail) return;
+      placePixelAt(customEvent.detail.clientX, customEvent.detail.clientY);
+    };
+
+    container.addEventListener('canvasTap', handleCanvasTap as EventListener);
+    return () => {
+      container.removeEventListener('canvasTap', handleCanvasTap as EventListener);
+    };
+  }, [placePixelAt]);
 
   // Canvas transform style
   const transformStyle = {
@@ -145,6 +166,7 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps = {}) {
               width: CANVAS_WIDTH,
               height: CANVAS_HEIGHT,
               imageRendering: 'pixelated',
+              touchAction: 'none',
             }}
           />
         </div>
@@ -173,4 +195,3 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps = {}) {
     </div>
   );
 }
-
