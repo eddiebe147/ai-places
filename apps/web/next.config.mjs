@@ -4,11 +4,12 @@ import withPWAInit from 'next-pwa';
 /** @type {import('next').NextConfig} */
 
 const isDev = process.env.NODE_ENV === 'development';
+const disablePWA = process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_DISABLE_PWA === '1';
 
 // PWA configuration
 const withPWA = withPWAInit({
   dest: 'public',
-  disable: isDev,
+  disable: isDev || disablePWA,
   register: true,
   skipWaiting: true,
   runtimeCaching: [

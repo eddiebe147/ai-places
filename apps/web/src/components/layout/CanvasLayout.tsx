@@ -57,6 +57,19 @@ export function CanvasLayout() {
     onError: (error) => debug.error('WebSocket error:', error),
   });
 
+  // Disable existing service workers to avoid stale PWA caching on mobile
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => {
+        registration.unregister().catch(() => {
+          // Ignore unregister errors
+        });
+      });
+    });
+  }, []);
+
   // iOS Safari: lock body scroll so touch gestures reach the canvas
   useEffect(() => {
     const isIOS =
