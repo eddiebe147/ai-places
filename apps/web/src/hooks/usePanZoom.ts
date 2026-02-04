@@ -68,6 +68,8 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
   const initialZoomRef = useRef<number>(ZOOM.DEFAULT);
   const touchMovedRef = useRef(false);
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  // Track which event system started the gesture to prevent double-processing
+  const activeEventSystemRef = useRef<'touch' | 'pointer' | null>(null);
 
   // Keep refs in sync
   useEffect(() => { viewportRef.current = viewport; }, [viewport]);
@@ -133,6 +135,10 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     const container = containerRef.current;
     if (!container) return;
 
+    // If pointer events already started a gesture, don't interfere
+    if (activeEventSystemRef.current === 'pointer') return;
+
+    activeEventSystemRef.current = 'touch';
     isTouchingRef.current = true;
     touchMovedRef.current = false;
 
@@ -156,6 +162,9 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
 
     const container = containerRef.current;
     if (!container || !isTouchingRef.current) return;
+
+    // Skip if pointer events are handling this gesture
+    if (activeEventSystemRef.current !== 'touch') return;
 
     const rect = container.getBoundingClientRect();
 
@@ -236,6 +245,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
       lastTouchRef.current = null;
       initialPinchDistRef.current = 0;
       touchMovedRef.current = false;
+      activeEventSystemRef.current = null; // Release so either system can start next gesture
     } else if (e.touches.length === 1) {
       // Went from 2 fingers to 1
       lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -250,6 +260,11 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
 
     const container = containerRef.current;
     if (!container) return;
+
+    // If touch events already started a gesture, don't interfere
+    if (activeEventSystemRef.current === 'touch') return;
+
+    activeEventSystemRef.current = 'pointer';
 
     if (container.setPointerCapture) {
       try {
@@ -285,6 +300,9 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
 
     const container = containerRef.current;
     if (!container || !isTouchingRef.current) return;
+
+    // Skip if touch events are handling this gesture
+    if (activeEventSystemRef.current !== 'pointer') return;
 
     activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
@@ -377,6 +395,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
       lastTouchRef.current = null;
       initialPinchDistRef.current = 0;
       touchMovedRef.current = false;
+      activeEventSystemRef.current = null; // Release so either system can start next gesture
     } else if (activePointersRef.current.size === 1) {
       const remaining = Array.from(activePointersRef.current.values())[0];
       lastTouchRef.current = { x: remaining.x, y: remaining.y };
@@ -492,27 +511,38 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
   // ============================================================
   // ATTACH NATIVE LISTENERS - Using useLayoutEffect for earliest timing
   // { passive: false } is CRITICAL for preventDefault to work on mobile!
+  //
+  // IMPORTANT: Attach BOTH pointer AND touch events on mobile!
+  // Many mobile browsers report PointerEvent support but don't fire events
+  // reliably. Touch events are the reliable fallback. The handlers check
+  // isTouchingRef to avoid double-processing.
   // ============================================================
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const supportsPointerEvents = 'PointerEvent' in window;
+    // Detect if this is a touch-capable device
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-    if (supportsPointerEvents) {
-      container.addEventListener('pointerdown', handlePointerDown, { passive: false });
-      window.addEventListener('pointermove', handlePointerMove, { passive: false });
-      window.addEventListener('pointerup', handlePointerUp, { passive: false });
-      window.addEventListener('pointercancel', handlePointerUp, { passive: false });
-    } else {
-      // Touch events - MUST be { passive: false } to allow preventDefault
+    // ALWAYS attach touch events on touch devices - they're the most reliable
+    // Touch events work on ALL mobile browsers including older iOS Safari
+    if (isTouchDevice) {
       container.addEventListener('touchstart', handleTouchStart, { passive: false });
       container.addEventListener('touchmove', handleTouchMove, { passive: false });
       container.addEventListener('touchend', handleTouchEnd, { passive: false });
       container.addEventListener('touchcancel', handleTouchEnd, { passive: false });
     }
 
-    // Mouse/wheel events
+    // ALSO attach pointer events if supported - they handle stylus/pen input
+    // and work better on some newer devices. The handlers filter by pointerType.
+    if ('PointerEvent' in window) {
+      container.addEventListener('pointerdown', handlePointerDown, { passive: false });
+      window.addEventListener('pointermove', handlePointerMove, { passive: false });
+      window.addEventListener('pointerup', handlePointerUp, { passive: false });
+      window.addEventListener('pointercancel', handlePointerUp, { passive: false });
+    }
+
+    // Mouse/wheel events (desktop)
     container.addEventListener('wheel', handleWheel, { passive: false });
     container.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mousemove', handleMouseMove);
@@ -520,16 +550,19 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      if (supportsPointerEvents) {
-        container.removeEventListener('pointerdown', handlePointerDown);
-        window.removeEventListener('pointermove', handlePointerMove);
-        window.removeEventListener('pointerup', handlePointerUp);
-        window.removeEventListener('pointercancel', handlePointerUp);
-      } else {
+      // Clean up touch events
+      if (isTouchDevice) {
         container.removeEventListener('touchstart', handleTouchStart);
         container.removeEventListener('touchmove', handleTouchMove);
         container.removeEventListener('touchend', handleTouchEnd);
         container.removeEventListener('touchcancel', handleTouchEnd);
+      }
+      // Clean up pointer events
+      if ('PointerEvent' in window) {
+        container.removeEventListener('pointerdown', handlePointerDown);
+        window.removeEventListener('pointermove', handlePointerMove);
+        window.removeEventListener('pointerup', handlePointerUp);
+        window.removeEventListener('pointercancel', handlePointerUp);
       }
       container.removeEventListener('wheel', handleWheel);
       container.removeEventListener('mousedown', handleMouseDown);

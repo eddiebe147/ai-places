@@ -70,63 +70,18 @@ export function CanvasLayout() {
     });
   }, []);
 
-  // iOS Safari: lock body scroll so touch gestures reach the canvas
+  // iOS Safari: prevent overscroll/bounce WITHOUT breaking touch interactions
+  // IMPORTANT: Do NOT set touch-action: none on body - it kills ALL touch input!
   useEffect(() => {
-    const isIOS =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (!isIOS) return;
-
-    const body = document.body;
+    // Only apply minimal fixes, let CSS handle the rest
     const docEl = document.documentElement;
-    const scrollY = window.scrollY;
 
-    const prev = {
-      bodyPosition: body.style.position,
-      bodyTop: body.style.top,
-      bodyLeft: body.style.left,
-      bodyRight: body.style.right,
-      bodyWidth: body.style.width,
-      bodyHeight: body.style.height,
-      bodyOverflow: body.style.overflow,
-      bodyTouchAction: body.style.touchAction,
-      docHeight: docEl.style.height,
-      docOverscroll: docEl.style.overscrollBehavior,
-    };
-
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.left = '0';
-    body.style.right = '0';
-    body.style.width = '100%';
-    body.style.height = '100%';
-    body.style.overflow = 'hidden';
-    body.style.touchAction = 'none';
-    docEl.style.height = '100%';
+    // Prevent overscroll bounce with CSS only (doesn't block touch events)
+    const prevOverscroll = docEl.style.overscrollBehavior;
     docEl.style.overscrollBehavior = 'none';
 
-    const preventTouchMove = (event: TouchEvent) => {
-      if (!event.cancelable) return;
-      const target = event.target as Element | null;
-      if (target?.closest('[data-allow-scroll]')) return;
-      event.preventDefault();
-    };
-
-    document.addEventListener('touchmove', preventTouchMove, { passive: false, capture: true });
-
     return () => {
-      document.removeEventListener('touchmove', preventTouchMove);
-      body.style.position = prev.bodyPosition;
-      body.style.top = prev.bodyTop;
-      body.style.left = prev.bodyLeft;
-      body.style.right = prev.bodyRight;
-      body.style.width = prev.bodyWidth;
-      body.style.height = prev.bodyHeight;
-      body.style.overflow = prev.bodyOverflow;
-      body.style.touchAction = prev.bodyTouchAction;
-      docEl.style.height = prev.docHeight;
-      docEl.style.overscrollBehavior = prev.docOverscroll;
-      window.scrollTo(0, scrollY);
+      docEl.style.overscrollBehavior = prevOverscroll;
     };
   }, []);
 
@@ -147,7 +102,7 @@ export function CanvasLayout() {
       </div>
 
       {/* Main canvas */}
-      <main id="main-canvas" role="application" aria-label="AI collaborative pixel canvas" className="absolute inset-0" style={{ touchAction: 'none' }}>
+      <main id="main-canvas" role="application" aria-label="AI collaborative pixel canvas" className="absolute inset-0">
         <PixelCanvas />
       </main>
 
@@ -167,7 +122,7 @@ export function CanvasLayout() {
 
       {/* Top bar */}
       <header
-        className="absolute top-0 left-0 right-0 z-10 pointer-events-none"
+        className="absolute top-0 left-0 right-0 z-[60] pointer-events-none"
         role="banner"
       >
         <div className="flex items-center justify-between px-3 md:px-5 py-2.5 md:py-3 bg-neutral-900/40 border-b border-white/10 backdrop-blur-xl">
@@ -331,7 +286,7 @@ export function CanvasLayout() {
       <BottomToolbar />
 
       {/* Bottom info bar - hidden on mobile to avoid clutter */}
-      <footer className="absolute bottom-2 left-2 right-2 z-10 pointer-events-none hidden md:block">
+      <footer className="absolute bottom-2 left-2 right-2 z-[60] pointer-events-none hidden md:block">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 pointer-events-auto">
             <a

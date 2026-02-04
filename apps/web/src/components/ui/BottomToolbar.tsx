@@ -62,7 +62,7 @@ export function BottomToolbar() {
   const hasActivity = totalPixels > 0;
 
   return (
-    <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+    <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-[70] pointer-events-auto">
       <div className="bg-neutral-950/90 backdrop-blur-md rounded-full border border-neutral-800/50 shadow-2xl px-2 py-1.5 flex items-center gap-2">
         {/* Trending indicator */}
         {hasActivity && trendingColor?.count > 0 && (

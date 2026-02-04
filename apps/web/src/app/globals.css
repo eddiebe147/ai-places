@@ -91,7 +91,7 @@ body {
 .canvas-container {
   user-select: none;
   -webkit-user-select: none;
-  touch-action: none;
+  /* touch-action: none; - REMOVED: was blocking ALL touch events */
 }
 
 /* Safe area for mobile notches */
