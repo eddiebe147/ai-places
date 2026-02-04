@@ -497,10 +497,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     const container = containerRef.current;
     if (!container) return;
 
-    const isIOS =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const supportsPointerEvents = 'PointerEvent' in window && !isIOS;
+    const supportsPointerEvents = 'PointerEvent' in window;
 
     if (supportsPointerEvents) {
       container.addEventListener('pointerdown', handlePointerDown, { passive: false });
