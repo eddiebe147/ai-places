@@ -252,7 +252,8 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
   }, [containerRef, dispatchCanvasTap]);
 
   const handlePointerDown = useCallback((e: PointerEvent) => {
-    if (e.pointerType === 'mouse') return;
+    // Only handle pen input via PointerEvents on touch devices.
+    if (e.pointerType !== 'pen') return;
     if (e.cancelable) e.preventDefault();
 
     const container = containerRef.current;
@@ -291,7 +292,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
   }, [containerRef]);
 
   const handlePointerMove = useCallback((e: PointerEvent) => {
-    if (e.pointerType === 'mouse') return;
+    if (e.pointerType !== 'pen') return;
     if (!activePointersRef.current.has(e.pointerId)) return;
     if (e.cancelable) e.preventDefault();
 
@@ -362,7 +363,7 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
   }, [containerRef]);
 
   const handlePointerUp = useCallback((e: PointerEvent) => {
-    if (e.pointerType === 'mouse') return;
+    if (e.pointerType !== 'pen') return;
     if (!activePointersRef.current.has(e.pointerId)) return;
     if (e.cancelable) e.preventDefault();
 

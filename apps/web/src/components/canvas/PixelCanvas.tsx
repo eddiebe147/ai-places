@@ -116,7 +116,6 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps = {}) {
         'relative w-full h-full overflow-hidden canvas-container',
         isDragging ? 'cursor-grabbing' : 'cursor-crosshair'
       )}
-      style={{ touchAction: 'none' }}
       onClick={handleClick}
       tabIndex={0}
       role="img"
@@ -166,7 +165,6 @@ export function PixelCanvas({ onPlacePixel }: PixelCanvasProps = {}) {
               width: CANVAS_WIDTH,
               height: CANVAS_HEIGHT,
               imageRendering: 'pixelated',
-              touchAction: 'none',
             }}
           />
         </div>

@@ -3,7 +3,7 @@
  */
 
 export const config = {
-  port: parseInt(process.env.WS_PORT || process.env.PORT || '8080', 10),
+  port: parseInt(process.env.PORT || process.env.WS_PORT || '8080', 10),
 
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
