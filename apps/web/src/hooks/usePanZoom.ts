@@ -546,6 +546,15 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('keydown', handleKeyDown);
 
+    const preventDocumentScroll = (event: TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target || !container.contains(target)) return;
+      if (event.cancelable) event.preventDefault();
+    };
+
+    document.addEventListener('touchstart', preventDocumentScroll, { passive: false, capture: true });
+    document.addEventListener('touchmove', preventDocumentScroll, { passive: false, capture: true });
+
     return () => {
       // Clean up touch events
       if (isTouchDevice) {
@@ -566,6 +575,8 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('touchstart', preventDocumentScroll);
+      document.removeEventListener('touchmove', preventDocumentScroll);
     };
   }, [
     containerRef,

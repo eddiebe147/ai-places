@@ -15,7 +15,19 @@ import { wsDebug } from '@/lib/debug';
 // Production fallback ensures canvas works even if Vercel env var is misconfigured
 const PRODUCTION_WS_URL = 'wss://aiplaces-ws.railway.app';
 const DEFAULT_WS_URL = process.env.NODE_ENV === 'development' ? 'ws://localhost:8080' : PRODUCTION_WS_URL;
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || DEFAULT_WS_URL;
+const rawEnvUrl = process.env.NEXT_PUBLIC_WS_URL;
+const normalizedEnvUrl =
+  rawEnvUrl &&
+  rawEnvUrl.startsWith('ws://') &&
+  typeof window !== 'undefined' &&
+  window.location.protocol === 'https:'
+    ? rawEnvUrl.replace(/^ws:/, 'wss:')
+    : rawEnvUrl;
+const envUrlIsValid =
+  normalizedEnvUrl &&
+  normalizedEnvUrl.startsWith('ws') &&
+  !normalizedEnvUrl.includes('localhost');
+const WS_URL = envUrlIsValid ? normalizedEnvUrl : DEFAULT_WS_URL;
 
 interface UseWebSocketOptions {
   onConnected?: () => void;
