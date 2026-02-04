@@ -12,19 +12,25 @@ import { debug } from '@/lib/debug';
 interface PixelCanvasProps {
   /** Optional callback for pixel placement (only for authenticated non-spectator users) */
   onPlacePixel?: (x: number, y: number, color: ColorIndex) => void;
+  /** Force debug overlay regardless of URL param */
+  debugOverlay?: boolean;
 }
 
-export function PixelCanvas({ onPlacePixel }: PixelCanvasProps = {}) {
+export function PixelCanvas({ onPlacePixel, debugOverlay }: PixelCanvasProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isDebug, setIsDebug] = useState(false);
+  const [isDebug, setIsDebug] = useState(Boolean(debugOverlay));
   const [lastInputEvent, setLastInputEvent] = useState<string>('none');
   const [lastInputPos, setLastInputPos] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (debugOverlay) {
+      setIsDebug(true);
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     setIsDebug(params.get('debug') === '1');
-  }, []);
+  }, [debugOverlay]);
 
   const { colorIndices, updatePixel, isLoading, error: canvasError } = useCanvasStore();
   const {
