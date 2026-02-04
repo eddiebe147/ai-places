@@ -135,8 +135,9 @@ export function usePanZoom({ containerRef, onCoordinateChange }: UsePanZoomOptio
     const container = containerRef.current;
     if (!container) return;
 
-    // Avoid double-handling if a touch sequence is already active
-    if (activeEventSystemRef.current === 'touch' && isTouchingRef.current) return;
+    // Avoid double-handling if a touch sequence is already active,
+    // but allow a second-finger touchstart to initialize pinch state.
+    if (activeEventSystemRef.current === 'touch' && isTouchingRef.current && e.touches.length < 2) return;
 
     // If pointer events already started a gesture, don't interfere
     if (activeEventSystemRef.current === 'pointer') return;
