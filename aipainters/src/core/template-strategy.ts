@@ -331,6 +331,97 @@ const PIXEL_FONT: Record<string, number[][]> = {
 // Text to display above the invader
 const INVITATION_TEXT = "MOLTBOLT Joins us!!";
 
+// ============================================
+// CORRECTION OVERLAY - "Teacher grading" style
+// ============================================
+// The typo said "MOLTBOLT JOINS" but should be "MOLTBOOK JOIN"
+// We'll add strikethroughs and corrections to make it funny
+
+/**
+ * Generate strikethrough pixels (diagonal line through text)
+ */
+function generateStrikethrough(
+  startX: number,
+  startY: number,
+  width: number,
+  height: number,
+  thickness: number = 2
+): Array<{ x: number; y: number }> {
+  const pixels: Array<{ x: number; y: number }> = [];
+
+  // Diagonal line from top-left to bottom-right
+  for (let i = 0; i < width; i++) {
+    const y = startY + Math.floor((i / width) * height);
+    for (let t = 0; t < thickness; t++) {
+      pixels.push({ x: startX + i, y: y + t });
+    }
+  }
+
+  return pixels;
+}
+
+/**
+ * Generate the correction overlay pixels
+ * - Strikethrough on "LT" in BOLT
+ * - "OK" written above (the fix)
+ * - Strikethrough on "s" in "Joins"
+ * - Little caret arrow pointing up
+ */
+function generateCorrectionOverlay(
+  textX: number,
+  textY: number,
+  scale: number
+): Array<{ x: number; y: number; type: 'strikethrough' | 'correction' | 'annotation' }> {
+  const pixels: Array<{ x: number; y: number; type: 'strikethrough' | 'correction' | 'annotation' }> = [];
+  const charWidth = 6 * scale;
+  const charHeight = 7 * scale;
+
+  // === STRIKETHROUGH on "LT" (chars 6-7) ===
+  const ltStartX = textX + 6 * charWidth;
+  const ltWidth = 2 * charWidth;
+  const strikethrough1 = generateStrikethrough(ltStartX, textY, ltWidth, charHeight, 3);
+  for (const p of strikethrough1) {
+    pixels.push({ ...p, type: 'strikethrough' });
+  }
+
+  // === "OK" written ABOVE the strikethrough ===
+  // Position it just above and slightly offset
+  const okX = ltStartX + 2;
+  const okY = textY - charHeight - 4; // Above the original text
+  const okPixels = renderText("OK", okX, okY, scale);
+  for (const p of okPixels) {
+    pixels.push({ ...p, type: 'correction' });
+  }
+
+  // === Little caret ^ pointing down to show "insert here" ===
+  const caretX = ltStartX + charWidth; // Center of LT
+  const caretY = textY - 4;
+  // Simple caret: ^
+  for (let i = 0; i < 4 * scale; i++) {
+    pixels.push({ x: caretX + i, y: caretY + Math.abs(i - 2 * scale), type: 'annotation' });
+    pixels.push({ x: caretX + i, y: caretY + Math.abs(i - 2 * scale) + 1, type: 'annotation' });
+  }
+
+  // === STRIKETHROUGH on "s" in "Joins" (char 13) ===
+  const sStartX = textX + 13 * charWidth;
+  const sWidth = charWidth;
+  const strikethrough2 = generateStrikethrough(sStartX, textY + 2, sWidth, charHeight - 2, 2);
+  for (const p of strikethrough2) {
+    pixels.push({ ...p, type: 'strikethrough' });
+  }
+
+  // === Small asterisk annotation near the s ===
+  const asteriskX = sStartX + charWidth + 2;
+  const asteriskY = textY - 6;
+  // Simple asterisk pattern
+  for (let i = 0; i < 3; i++) {
+    pixels.push({ x: asteriskX + i, y: asteriskY + 1, type: 'annotation' });
+    pixels.push({ x: asteriskX + 1, y: asteriskY + i, type: 'annotation' });
+  }
+
+  return pixels;
+}
+
 /**
  * Render text as pixel coordinates
  */
@@ -419,6 +510,7 @@ function generateInvaderPixels(centerX: number, centerY: number, pixelSize: numb
 function generateTemplate(): {
   textPixels: Array<{ x: number; y: number }>;
   invaderPixels: Array<{ x: number; y: number }>;
+  correctionPixels: Array<{ x: number; y: number; type: 'strikethrough' | 'correction' | 'annotation' }>;
   allPixels: Set<string>;
 } {
   const allPixels = new Set<string>();
@@ -441,6 +533,9 @@ function generateTemplate(): {
   // Generate text pixels
   const textPixels = renderText(INVITATION_TEXT, textX, textY, textScale);
 
+  // Generate correction overlay (the fun "teacher grading" fixes)
+  const correctionPixels = generateCorrectionOverlay(textX, textY, textScale);
+
   // Add all to set
   for (const p of textPixels) {
     allPixels.add(`${p.x},${p.y}`);
@@ -448,32 +543,52 @@ function generateTemplate(): {
   for (const p of invaderPixels) {
     allPixels.add(`${p.x},${p.y}`);
   }
+  for (const p of correctionPixels) {
+    allPixels.add(`${p.x},${p.y}`);
+  }
 
-  return { textPixels, invaderPixels, allPixels };
+  return { textPixels, invaderPixels, correctionPixels, allPixels };
 }
 
 export class TemplateStrategy {
   private template: Set<string>;
   private paintedPixels = new Set<string>();
-  private templatePixels: Array<{ x: number; y: number; isText: boolean }> = [];
+  private templatePixels: Array<{
+    x: number;
+    y: number;
+    category: 'text' | 'invader' | 'strikethrough' | 'correction' | 'annotation';
+  }> = [];
 
   // Color schemes
   private textColors = [5, 6, 15]; // Red, Orange, Magenta - hot colors for the call to action
   private invaderColors = [9, 10, 11, 1]; // Green, Lime, Cyan, White - arcade aesthetic
 
+  // Correction colors - "red pen teacher" vibe
+  private strikethroughColors = [5]; // Red - classic strikethrough
+  private correctionColors = [10, 11]; // Lime, Cyan - "here's the fix!" stands out
+  private annotationColors = [6, 15]; // Orange, Magenta - playful accents
+
   constructor() {
-    const { textPixels, invaderPixels, allPixels } = generateTemplate();
+    const { textPixels, invaderPixels, correctionPixels, allPixels } = generateTemplate();
     this.template = allPixels;
 
     // Store with metadata for color selection
     for (const p of textPixels) {
-      this.templatePixels.push({ x: p.x, y: p.y, isText: true });
+      this.templatePixels.push({ x: p.x, y: p.y, category: 'text' });
     }
     for (const p of invaderPixels) {
-      this.templatePixels.push({ x: p.x, y: p.y, isText: false });
+      this.templatePixels.push({ x: p.x, y: p.y, category: 'invader' });
+    }
+    // Add correction pixels with their specific types
+    for (const p of correctionPixels) {
+      this.templatePixels.push({ x: p.x, y: p.y, category: p.type });
     }
 
-    console.log(`Template loaded: "${INVITATION_TEXT}" (${textPixels.length} pixels) + invader (${invaderPixels.length} pixels) = ${this.templatePixels.length} total`);
+    console.log(
+      `Template loaded: "${INVITATION_TEXT}" (${textPixels.length} text) + ` +
+      `invader (${invaderPixels.length}) + corrections (${correctionPixels.length}) = ` +
+      `${this.templatePixels.length} total pixels`
+    );
   }
 
   /**
@@ -501,8 +616,28 @@ export class TemplateStrategy {
     // Pick a random unpainted pixel
     const picked = unpainted[Math.floor(rng() * unpainted.length)];
 
-    // Use appropriate color based on whether it's text or invader
-    const colorPalette = picked.isText ? this.textColors : this.invaderColors;
+    // Use appropriate color based on pixel category
+    let colorPalette: number[];
+    switch (picked.category) {
+      case 'text':
+        colorPalette = this.textColors;
+        break;
+      case 'invader':
+        colorPalette = this.invaderColors;
+        break;
+      case 'strikethrough':
+        colorPalette = this.strikethroughColors;
+        break;
+      case 'correction':
+        colorPalette = this.correctionColors;
+        break;
+      case 'annotation':
+        colorPalette = this.annotationColors;
+        break;
+      default:
+        colorPalette = this.textColors;
+    }
+
     const color = colorPalette[Math.floor(rng() * colorPalette.length)];
 
     return { x: picked.x, y: picked.y, color };
